@@ -243,8 +243,27 @@
               <p>Klik di peta atau masukkan koordinat untuk menghitung sinyal jarak ke 5 Daerah Irigasi terdekat.</p>
             </div>
 
+            <!-- COMPARISON CONTROLS BAR -->
+            <div id="proximityControls" class="proximity-controls hidden">
+              <div class="proximity-controls-header">
+                <div class="flex-align">
+                  <i class="fa-solid fa-code-compare" style="color: #00e5ff;"></i>
+                  <span>Pilih & Bandingkan 5 DI Terdekat:</span>
+                </div>
+                <span id="activeCompareCountBadge" class="compare-count-badge">1 DI Aktif</span>
+              </div>
+              <div class="proximity-controls-btns">
+                <button id="btnHighlightAll5" class="btn-compare-action btn-compare-all" title="Highlight & bandingkan seluruh 5 DI terdekat sekaligus di peta">
+                  <i class="fa-solid fa-layer-group"></i> Highlight Semua (5 DI)
+                </button>
+                <button id="btnClearCompareDis" class="btn-compare-action btn-compare-clear" title="Sembunyikan semua highlight">
+                  <i class="fa-solid fa-eye-slash"></i> Sembunyikan
+                </button>
+              </div>
+            </div>
+
             <div id="proximityList" class="proximity-list hidden">
-              <!-- Dynamically populated 5 nearest DIs -->
+              <!-- Dynamically populated 5 nearest DIs with multi-selection -->
             </div>
           </div>
 

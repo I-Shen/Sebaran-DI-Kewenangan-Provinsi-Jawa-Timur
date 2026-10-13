@@ -346,28 +346,38 @@ document.addEventListener('DOMContentLoaded', () => {
     inspector.classList.remove('hidden');
   }
 
-  function highlightDi(diId) {
-    const item = diMarkersMap.get(diId) || { data: allDiData.find(d => d.id === diId) };
-    if (!item || !item.data) return;
+  // Multi-DI Highlight Storage: Map<diId, { di, layer, rankIndex, colorCfg, counts }>
+  const activeHighlightedDis = new Map();
+  let currentNearest5List = [];
 
+  // Ranked Color Palettes for Comparing 5 Nearest DIs
+  const NEAREST_RANK_COLORS = [
+    { rank: 1, color: '#10b981', fill: '#10b981', badgeBg: '#10b981', badgeText: '#022c22', name: 'Rank 1 (Hijau Emerald)' },
+    { rank: 2, color: '#00e5ff', fill: '#00e5ff', badgeBg: '#00e5ff', badgeText: '#082f49', name: 'Rank 2 (Vibrant Cyan)' },
+    { rank: 3, color: '#f59e0b', fill: '#f59e0b', badgeBg: '#f59e0b', badgeText: '#451a03', name: 'Rank 3 (Amber Oranye)' },
+    { rank: 4, color: '#a855f7', fill: '#a855f7', badgeBg: '#a855f7', badgeText: '#3b0764', name: 'Rank 4 (Violet Ungu)' },
+    { rank: 5, color: '#ec4899', fill: '#ec4899', badgeBg: '#ec4899', badgeText: '#500724', name: 'Rank 5 (Rose Pink)' }
+  ];
+
+  function loadAndAddDiHighlight(diId, rankIndex = 0, autoFit = true, callback = null) {
+    const item = diMarkersMap.get(diId) || { data: allDiData.find(d => d.id === diId) };
+    if (!item || !item.data) {
+      if (callback) callback();
+      return;
+    }
     const di = item.data;
 
-    // Update Quick Selector Dropdown
-    const selectEl = document.getElementById('selectQuickDi');
-    if (selectEl && selectEl.value !== String(diId)) {
-      selectEl.value = String(diId);
+    // If already loaded, just trigger callback
+    if (activeHighlightedDis.has(diId)) {
+      if (callback) callback();
+      return;
     }
 
-    // Clear previous highlight
-    if (currentHighlightLayer) {
-      map.removeLayer(currentHighlightLayer);
-      currentHighlightLayer = null;
-    }
+    const colorCfg = NEAREST_RANK_COLORS[rankIndex % NEAREST_RANK_COLORS.length];
 
     loadDiGeoJson(diId, (geoJsonData) => {
       if (!geoJsonData || !geoJsonData.features || geoJsonData.features.length === 0) {
-        showToast('Info Peta', `Memusatkan tampilan ke ${di.nama_di}.`);
-        map.flyTo([di.lat, di.lon], 15, { duration: 1.2 });
+        if (callback) callback();
         return;
       }
 
@@ -377,8 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let firstInteractiveFeature = null;
       let firstInteractiveLayer = null;
 
-      // Create Google Earth style GeoJSON vector layer (GAMBAR 2)
-      currentHighlightLayer = L.geoJSON(geoJsonData, {
+      const layer = L.geoJSON(geoJsonData, {
         style: function(feature) {
           const p = feature.properties || {};
           const geomType = feature.geometry ? feature.geometry.type : '';
@@ -387,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (tipe === 'saluran' || geomType === 'LineString') {
             countSaluran++;
             return {
-              color: '#32cd32',      // Hijau Saluran Google Earth (Gambar 2)
+              color: colorCfg.color, // Color coded by DI rank
               weight: 3.5,
               opacity: 1.0,
               lineCap: 'round',
@@ -396,9 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             countPetak++;
             return {
-              fillColor: '#9acd32',  // Kuning-Hijau Lime Petak Sawah Google Earth (Gambar 2)
-              fillOpacity: 0.45,
-              color: '#22c55e',      // Garis Batas Hijau Terang
+              fillColor: colorCfg.fill, // Color coded by DI rank
+              fillOpacity: 0.38,
+              color: colorCfg.color,
               weight: 2.2,
               lineCap: 'round',
               lineJoin: 'round'
@@ -407,82 +416,181 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         pointToLayer: function(feature, latlng) {
           countBangunan++;
-          // Google Earth Yellow Pushpin (Gambar 2)
           return L.marker(latlng, { icon: gePushpinIcon });
         },
-        onEachFeature: function(feature, layer) {
+        onEachFeature: function(feature, featLayer) {
           const p = feature.properties || {};
           const geomType = feature.geometry ? feature.geometry.type : '';
           const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
           const title = p.name || p.nomenklatur || p.nama || (tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi'));
 
-          // Tooltip on hover
-          layer.bindTooltip(`<strong>${title}</strong><br><small style="color: #10b981;">${p.di_name || di.nama_di} (${tipe})</small>`, {
-            sticky: true,
-            className: 'ge-map-tooltip'
-          });
+          // Tooltip on hover with DI identification
+          featLayer.bindTooltip(`
+            <div style="font-family: Inter, sans-serif;">
+              <span style="display: inline-block; background: ${colorCfg.badgeBg}; color: ${colorCfg.badgeText}; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 3px; margin-bottom: 2px;">#${rankIndex + 1} ${di.nama_di}</span><br>
+              <strong>${title}</strong><br>
+              <small style="color: #94a3b8;">${tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi')}</small>
+            </div>
+          `, { sticky: true, className: 'ge-map-tooltip' });
 
-          // Click event: Opens Google Earth Inspector Card (GAMBAR 3)
-          layer.on('click', (e) => {
+          // Click event opens Inspector Card (Gambar 3)
+          featLayer.on('click', (e) => {
             L.DomEvent.stopPropagation(e);
-            showGoogleEarthInspector(feature, di, layer);
+            showGoogleEarthInspector(feature, di, featLayer);
           });
 
           if (!firstInteractiveFeature && (tipe === 'petak' || tipe === 'saluran')) {
             firstInteractiveFeature = feature;
-            firstInteractiveLayer = layer;
+            firstInteractiveLayer = featLayer;
           }
         }
       });
 
-      currentHighlightLayer.addTo(map);
+      layer.addTo(map);
 
-      // Auto-fit 1 DI UTUH to entire screen (1 Layar Penuh)
-      const bounds = currentHighlightLayer.getBounds();
-      if (bounds && bounds.isValid()) {
-        map.fitBounds(bounds, {
-          padding: [60, 60],
-          maxZoom: 17,
-          duration: 1.0
-        });
-      } else {
-        map.flyTo([di.lat, di.lon], 15, { duration: 1.0 });
+      activeHighlightedDis.set(diId, {
+        di,
+        layer,
+        rankIndex,
+        colorCfg,
+        counts: { saluran: countSaluran, petak: countPetak, bangunan: countBangunan }
+      });
+
+      updateMultiHighlightBanner();
+      updateCompareCheckboxes();
+
+      if (autoFit) {
+        fitAllActiveHighlightedDis();
       }
 
-      // Update Floating Banner
-      const banner = document.getElementById('diHighlightBanner');
-      document.getElementById('bannerDiTitle').textContent = `${di.nama_di} (${di.upt})`;
-      document.getElementById('bannerDiStats').textContent = `${countSaluran} Saluran • ${countPetak} Petak • ${countBangunan} Bangunan`;
-      banner.classList.remove('hidden');
-
-      // Automatically inspect the primary feature (or matching user reference like TK.1.Ka)
-      let featureToInspect = geoJsonData.features.find(f => (f.properties && f.properties.name && f.properties.name.includes('TK.1.Ka')));
-      if (!featureToInspect) {
-        featureToInspect = firstInteractiveFeature || geoJsonData.features[0];
-      }
-      if (featureToInspect) {
-        showGoogleEarthInspector(featureToInspect, di, firstInteractiveLayer);
-      }
+      if (callback) callback();
     });
   }
 
-  function clearHighlight() {
-    if (currentHighlightLayer) {
-      map.removeLayer(currentHighlightLayer);
-      currentHighlightLayer = null;
+  function removeDiHighlight(diId, autoFit = true) {
+    if (activeHighlightedDis.has(diId)) {
+      const entry = activeHighlightedDis.get(diId);
+      map.removeLayer(entry.layer);
+      activeHighlightedDis.delete(diId);
+      updateMultiHighlightBanner();
+      updateCompareCheckboxes();
+      if (autoFit) {
+        fitAllActiveHighlightedDis();
+      }
     }
+  }
+
+  function clearAllHighlightedDis() {
+    activeHighlightedDis.forEach(entry => {
+      map.removeLayer(entry.layer);
+    });
+    activeHighlightedDis.clear();
     const banner = document.getElementById('diHighlightBanner');
     if (banner) banner.classList.add('hidden');
     const inspector = document.getElementById('googleEarthInspector');
     if (inspector) inspector.classList.add('hidden');
     selectedVectorLayer = null;
+    updateCompareCheckboxes();
   }
 
-  // Export highlightDi to global window
+  function fitAllActiveHighlightedDis() {
+    if (activeHighlightedDis.size === 0) return;
+    const combinedBounds = L.latLngBounds([]);
+    activeHighlightedDis.forEach(entry => {
+      if (entry.layer.getBounds && entry.layer.getBounds().isValid()) {
+        combinedBounds.extend(entry.layer.getBounds());
+      }
+    });
+    if (combinedBounds.isValid()) {
+      map.fitBounds(combinedBounds, {
+        padding: [60, 60],
+        maxZoom: 16,
+        duration: 0.8
+      });
+    }
+  }
+
+  function updateMultiHighlightBanner() {
+    const banner = document.getElementById('diHighlightBanner');
+    const countBadge = document.getElementById('activeCompareCountBadge');
+    const size = activeHighlightedDis.size;
+
+    if (countBadge) {
+      countBadge.textContent = `${size} DI Aktif`;
+    }
+
+    if (size === 0) {
+      banner.classList.add('hidden');
+      return;
+    }
+
+    banner.classList.remove('hidden');
+
+    if (size === 1) {
+      const first = [...activeHighlightedDis.values()][0];
+      document.getElementById('bannerDiTitle').textContent = `${first.di.nama_di} (${first.di.upt})`;
+      document.getElementById('bannerDiStats').textContent = `${first.counts.saluran} Saluran • ${first.counts.petak} Petak • ${first.counts.bangunan} Bangunan`;
+    } else {
+      const names = [...activeHighlightedDis.values()].map(e => e.di.nama_di).join(', ');
+      let totSal = 0, totPet = 0, totBang = 0;
+      activeHighlightedDis.forEach(e => {
+        totSal += e.counts.saluran;
+        totPet += e.counts.petak;
+        totBang += e.counts.bangunan;
+      });
+      document.getElementById('bannerDiTitle').textContent = `Perbandingan ${size} DI Terdekat: ${names}`;
+      document.getElementById('bannerDiStats').textContent = `Total: ${totSal} Saluran • ${totPet} Petak • ${totBang} Bangunan`;
+    }
+  }
+
+  function updateCompareCheckboxes() {
+    document.querySelectorAll('.compare-checkbox').forEach(cb => {
+      const diId = parseInt(cb.getAttribute('data-di-id'));
+      const isChecked = activeHighlightedDis.has(diId);
+      cb.checked = isChecked;
+
+      const parentItem = cb.closest('.nearest-item');
+      if (parentItem) {
+        if (isChecked) {
+          parentItem.classList.add('active-highlight');
+        } else {
+          parentItem.classList.remove('active-highlight');
+        }
+      }
+    });
+  }
+
+  // Single Highlight (Backward-compatible for Dropdown / Marker click)
+  function highlightDi(diId) {
+    clearAllHighlightedDis();
+
+    // Update Quick Selector Dropdown
+    const selectEl = document.getElementById('selectQuickDi');
+    if (selectEl && selectEl.value !== String(diId)) {
+      selectEl.value = String(diId);
+    }
+
+    loadAndAddDiHighlight(diId, 0, true, () => {
+      // Auto inspect first feature
+      const entry = activeHighlightedDis.get(diId);
+      if (entry) {
+        entry.layer.eachLayer((featLayer) => {
+          if (!window.currentGeActiveFeature && featLayer.feature) {
+            showGoogleEarthInspector(featLayer.feature, entry.di, featLayer);
+          }
+        });
+      }
+    });
+  }
+
+  // Export to window
   window.highlightDi = highlightDi;
+  window.loadAndAddDiHighlight = loadAndAddDiHighlight;
+  window.removeDiHighlight = removeDiHighlight;
+  window.clearAllHighlightedDis = clearAllHighlightedDis;
 
   document.getElementById('btnCloseHighlight').addEventListener('click', () => {
-    clearHighlight();
+    clearAllHighlightedDis();
     map.fitBounds(EAST_JAVA_BOUNDS, { padding: [20, 20], duration: 1.0 });
   });
 
@@ -671,6 +779,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Populate Sidebar 5 DI Terdekat
     renderNearestList(nearest5);
 
+    // Auto-highlight DI #1 terdekat sebagai perbandingan awal
+    clearAllHighlightedDis();
+    loadAndAddDiHighlight(nearest5[0].id, 0, false);
+
     // Show Notification Toast
     if (nearest5.length > 0) {
       const top1 = nearest5[0];
@@ -686,35 +798,111 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderNearestList(nearestItems) {
+    currentNearest5List = nearestItems;
     const listContainer = document.getElementById('proximityList');
     const emptyContainer = document.getElementById('proximityEmpty');
+    const controlsContainer = document.getElementById('proximityControls');
 
     emptyContainer.style.display = 'none';
+    if (controlsContainer) controlsContainer.classList.remove('hidden');
     listContainer.classList.remove('hidden');
     listContainer.innerHTML = '';
 
     nearestItems.forEach((item, idx) => {
       const rank = idx + 1;
+      const colorCfg = NEAREST_RANK_COLORS[idx % NEAREST_RANK_COLORS.length];
+      const isChecked = activeHighlightedDis.has(item.id);
+
       const itemEl = document.createElement('div');
-      itemEl.className = `nearest-item rank-${rank}`;
+      itemEl.className = `nearest-item rank-${rank} ${isChecked ? 'active-highlight' : ''}`;
+      itemEl.setAttribute('data-di-id', item.id);
+
       itemEl.innerHTML = `
         <div class="item-left">
-          <div class="rank-badge">#${rank}</div>
+          <label class="compare-toggle-wrap" title="Centang untuk menampilkan & membandingkan DI ini di peta">
+            <input type="checkbox" class="compare-checkbox" data-di-id="${item.id}" data-rank-idx="${idx}" ${isChecked ? 'checked' : ''}>
+          </label>
+          <div class="rank-badge" style="background: ${colorCfg.badgeBg}; color: ${colorCfg.badgeText};">#${rank}</div>
           <div class="di-details">
             <h4>${item.nama_di}</h4>
             <span><i class="fa-solid fa-building-flag"></i> ${item.upt}</span>
           </div>
         </div>
         <div class="item-right">
-          <div class="dist-badge">${item.distance.toFixed(2)} km</div>
+          <div class="dist-badge" style="border: 1px solid ${colorCfg.color}; color: ${colorCfg.color};">${item.distance.toFixed(2)} km</div>
+          <button class="btn-focus-di" title="Pusatkan kamera ke DI ini"><i class="fa-solid fa-crosshairs"></i></button>
         </div>
       `;
 
-      itemEl.addEventListener('click', () => {
-        highlightDi(item.id);
+      // Checkbox event
+      const checkbox = itemEl.querySelector('.compare-checkbox');
+      checkbox.addEventListener('change', (e) => {
+        e.stopPropagation();
+        if (checkbox.checked) {
+          loadAndAddDiHighlight(item.id, idx, true);
+        } else {
+          removeDiHighlight(item.id, true);
+        }
+      });
+
+      // Focus button event
+      const btnFocus = itemEl.querySelector('.btn-focus-di');
+      btnFocus.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!activeHighlightedDis.has(item.id)) {
+          checkbox.checked = true;
+          loadAndAddDiHighlight(item.id, idx, false, () => {
+            const entry = activeHighlightedDis.get(item.id);
+            if (entry && entry.layer.getBounds && entry.layer.getBounds().isValid()) {
+              map.fitBounds(entry.layer.getBounds(), { padding: [50, 50], maxZoom: 16, duration: 0.8 });
+            }
+          });
+        } else {
+          const entry = activeHighlightedDis.get(item.id);
+          if (entry && entry.layer.getBounds && entry.layer.getBounds().isValid()) {
+            map.fitBounds(entry.layer.getBounds(), { padding: [50, 50], maxZoom: 16, duration: 0.8 });
+          }
+        }
+      });
+
+      // Clicking row body toggles checkbox
+      itemEl.addEventListener('click', (e) => {
+        if (e.target.tagName.toLowerCase() === 'input' || e.target.closest('.btn-focus-di') || e.target.closest('.compare-toggle-wrap')) return;
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change'));
       });
 
       listContainer.appendChild(itemEl);
+    });
+  }
+
+  // BUTTON LISTENERS: COMPARE ALL & CLEAR
+  const btnHighlightAll5 = document.getElementById('btnHighlightAll5');
+  if (btnHighlightAll5) {
+    btnHighlightAll5.addEventListener('click', () => {
+      if (!currentNearest5List || currentNearest5List.length === 0) return;
+
+      let loadedCount = 0;
+      currentNearest5List.forEach((item, idx) => {
+        loadAndAddDiHighlight(item.id, idx, false, () => {
+          loadedCount++;
+          if (loadedCount >= currentNearest5List.length) {
+            fitAllActiveHighlightedDis();
+            showToast(
+              'Mode Perbandingan Aktif',
+              `Seluruh <strong>${currentNearest5List.length} DI terdekat</strong> berhasil ditampilkan bersamaan di peta untuk perbandingan visual.`
+            );
+          }
+        });
+      });
+    });
+  }
+
+  const btnClearCompareDis = document.getElementById('btnClearCompareDis');
+  if (btnClearCompareDis) {
+    btnClearCompareDis.addEventListener('click', () => {
+      clearAllHighlightedDis();
+      showToast('Highlight Dibersihkan', 'Semua lapisan vektor perbandingan telah disembunyikan.');
     });
   }
 
