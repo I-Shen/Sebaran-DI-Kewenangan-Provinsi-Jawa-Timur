@@ -30,6 +30,7 @@ Seluruh data geospasial jaringan irigasi, batas petak sawah, dan inventarisasi b
   9. **UPT Madura**: 5 DI
 * **Berkas Spasial Master**: 198 Berkas KMZ/KML Terintegrasi
 * **Total Fitur Spasial Aktif**: **50.507 Unsur Geospasial** (Saluran, Petak, dan Bangunan)
+* **Jaringan Sungai Utama (6 Wilayah Sungai)**: **18.724 Segmen Sungai** dengan total panjang **47.383,6 km**
 
 ---
 
@@ -71,6 +72,37 @@ Sesuai standar operasional Google Earth Dinas PUSDA Jawa Timur, setiap Daerah Ir
    * Melambangkan seluruh bangunan air fisik pelengkap jaringan irigasi (Bendung, Pintu Sadap, Pintu Bagi, Gorong-gorong, Talang, dsb.).
    * Ditampilkan menggunakan ikon **Google Earth Yellow Pushpin** (`assets/ylw-pushpin.png`) autentik dengan tambahan **cincin aksen (*indicator ring*)** warna DI pada titik tancap jarum.
    * Memuat data atribut lengkap: `id_di`, `k_aset` (kode aset), `nama`, `nomenklatur`, `norec`, dan koordinat presisi.
+
+---
+
+## 🌊 Jaringan Sungai Utama Jawa Timur (6 Wilayah Sungai)
+
+WebGIS ini mengintegrasikan seluruh jaringan sungai alami di Jawa Timur yang terbagi ke dalam **6 Wilayah Sungai (WS)** besar dengan total **18.724 segmen sungai** dan total panjang mencapai **47.383,6 kilometer**:
+
+| No | Wilayah Sungai (WS) | Jumlah Segmen | Total Panjang (km) | Warna Casing Pembeda | Hex Casing |
+|:---|:---|:---:|:---:|:---|:---:|
+| 1 | **WS Brantas** | 3.425 segmen | 9.837,7 km | Amber Gold | `#f59e0b` |
+| 2 | **WS Bengawan Solo** | 4.487 segmen | 12.330,4 km | Emerald Green | `#10b981` |
+| 3 | **WS Bondoyudo Baru** | 5.336 segmen | 10.932,8 km | Vivid Rose Magenta | `#ec4899` |
+| 4 | **WS Welang Pekalen** | 1.660 segmen | 5.161,4 km | Electric Violet | `#8b5cf6` |
+| 5 | **WS Sampean Setail** | 949 segmen | 3.516,7 km | Sunset Orange | `#f97316` |
+| 6 | **WS Kepulauan Madura** | 2.867 segmen | 5.604,6 km | Aqua Cyan | `#00e5ff` |
+
+### Prinsip Kartografi Garis Ganda (Dual-Stroke Casing):
+* **Warna Base Inti Sungai (River Core)**: Menggunakan **Biru Tua Alami (`#1e40af`, width 2.5–3.0px)** sebagai lambang air sungai alami yang mengalir deras, membedakannya secara tegas dari saluran irigasi buatan yang berinti biru muda cerah (`#00e5ff`).
+* **Warna Pembungkus Luar (Outer Casing)**: Garis luar ganda (*dual-stroke casing*, *width* 5.6px) dengan warna tematik per Wilayah Sungai sehingga saat peta dibuka pertama kali pada skala provinsi, aliran sungai di tiap wilayah sungai langsung terlihat kontras, tegas, dan mudah diidentifikasi.
+* **Hierarki Visual Layering (Leaflet Custom Panes)**:
+  * `Tile Basemap` (zIndex 200)
+  * `riversCasingPane` (zIndex 410) & `riversCorePane` (zIndex 412) — Sungai alami berada di bawah saluran irigasi.
+  * `diHighlightPane` (zIndex 450) — Jaringan DI (saluran, petak, bangunan) berada di atas lapisan sungai.
+  * `diClusterPane` (zIndex 600+) — Pin DI.
+  * `radarPane` (zIndex 1000) — Radar proksimitas & target pin.
+* **Interaktivitas Sungai & Google Earth Inspector**:
+  * **Hover Tooltip**: Menampilkan nama sungai, orde sungai, dan wilayah sungai.
+  * **Klik Sungai**: Membuka kartu **Google Earth Inspector** dengan data teknis: *Nama Sungai*, *Wilayah Sungai*, *DAS*, *Orde Sungai*, *Panjang Sungai (km & m)*, dan *Kabupaten*.
+* **Kontrol Peta**:
+  * Tombol **Toggle Sungai (`🌊 Sungai: ON/OFF`)** di bilah atas (*top navbar*).
+  * Menu dropdown seleksi per wilayah sungai di kontrol peta melayang (*floating map controls*).
 
 ---
 
@@ -155,10 +187,18 @@ Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur/
 ├── data/
 │   ├── di_jatim.json       # Database Induk 181 DI Kewenangan Provinsi Jatim
 │   ├── di_jatim.js         # Wrapper JS untuk kompatibilitas offline
-│   └── geojson/            # 181 Berkas Vektor Lengkap (Saluran, Petak, Bangunan)
-│       ├── 1.json / 1.js   # DI Bedilan (Korwil Madiun)
-│       ├── 66.json / 66.js # DI Sumber Tekik (Korwil Malang - Sampel Gambar 2 & 3)
-│       └── ...             # Seluruh 181 DI Lainnya
+│   ├── geojson/            # 181 Berkas Vektor Lengkap (Saluran, Petak, Bangunan)
+│   │   ├── 1.json / 1.js   # DI Bedilan (Korwil Madiun)
+│   │   ├── 66.json / 66.js # DI Sumber Tekik (Korwil Malang - Sampel Gambar 2 & 3)
+│   │   └── ...             # Seluruh 181 DI Lainnya
+│   └── sungai/             # Vektor Jaringan 6 Wilayah Sungai Jawa Timur (Dual-Stroke)
+│       ├── brantas.json / brantas.js
+│       ├── bengawan_solo.json / bengawan_solo.js
+│       ├── bondoyudo_baru.json / bondoyudo_baru.js
+│       ├── welang_pekalen.json / welang_pekalen.js
+│       ├── sampean_setail.json / sampean_setail.js
+│       ├── madura.json / madura.js
+│       └── index.json / index.js
 ├── PRD.md                  # Dokumen Kebutuhan Produk (PRD) Lengkap
 └── README.md               # Dokumentasi Teknis & Uraian Proyek
 ```
