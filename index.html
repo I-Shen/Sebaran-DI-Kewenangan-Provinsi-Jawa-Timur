@@ -38,6 +38,14 @@
       </div>
 
       <div class="header-actions">
+        <!-- QUICK DI SELECTOR (GOOGLE EARTH VIEW) -->
+        <div class="di-nav-selector-wrap">
+          <i class="fa-solid fa-earth-asia"></i>
+          <select id="selectQuickDi" class="select-quick-di" title="Pilih Daerah Irigasi (Tampilan Google Earth)">
+            <option value="">Pilih DI (Tampilan Google Earth)...</option>
+          </select>
+        </div>
+
         <button id="btnToggleSidebar" class="btn-icon" title="Buka/Tutup Panel Kontrol">
           <i class="fa-solid fa-sliders"></i>
           <span class="btn-text">Panel Kontrol</span>
@@ -57,6 +65,91 @@
       <!-- LEAFLET MAP CONTAINER -->
       <div id="map"></div>
 
+      <!-- GOOGLE EARTH INSPECTOR CARD (PERSIS GAMBAR 3) -->
+      <div id="googleEarthInspector" class="ge-inspector-card hidden">
+        <div class="ge-card-header">
+          <div class="ge-header-left">
+            <span id="geHeaderIcon" class="ge-type-icon">
+              <i class="fa-solid fa-draw-polygon"></i>
+            </span>
+            <div class="ge-title-wrap">
+              <h3 id="geTitle">TK.1.Ka (6,27 ha)</h3>
+              <span id="geSubTitle" class="ge-subtitle">Petak Sawah • DI Sumber Tekik</span>
+            </div>
+          </div>
+          <div class="ge-header-actions">
+            <button id="btnGeMenu" class="ge-btn-icon" title="Menu"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            <button id="btnCloseGeInspector" class="ge-btn-icon" title="Tutup"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+
+        <div class="ge-card-body">
+          <!-- METRICS GROUP (Area & Perimeter dengan icon chevron dropdown) -->
+          <div id="geMetricsGroup" class="ge-metrics-group">
+            <div class="ge-metric-item" id="geAreaRow">
+              <div class="ge-metric-header">
+                <span class="ge-metric-label">Area</span>
+                <i class="fa-solid fa-caret-down ge-caret"></i>
+              </div>
+              <div id="geAreaVal" class="ge-metric-val">62,725.21 m²</div>
+              <div id="geAreaHaVal" class="ge-metric-sub">6.27 ha</div>
+            </div>
+
+            <div class="ge-metric-item" id="gePerimeterRow">
+              <div class="ge-metric-header">
+                <span id="gePerimeterLabel" class="ge-metric-label">Perimeter</span>
+                <i class="fa-solid fa-caret-down ge-caret"></i>
+              </div>
+              <div id="gePerimeterVal" class="ge-metric-val">1,173.34 m</div>
+            </div>
+          </div>
+
+          <!-- ATTRIBUTE LIST (id_di, k_aset, nama, nomenklatur, norec) -->
+          <div class="ge-attr-list">
+            <div class="ge-attr-row">
+              <span class="ge-attr-key">id_di</span>
+              <span id="geAttrIdDi" class="ge-attr-val">27935</span>
+            </div>
+            <div class="ge-attr-row">
+              <span class="ge-attr-key">k_aset</span>
+              <span id="geAttrKAset" class="ge-attr-val">F41</span>
+            </div>
+            <div class="ge-attr-row">
+              <span class="ge-attr-key">nama</span>
+              <span id="geAttrNama" class="ge-attr-val">ki</span>
+            </div>
+            <div class="ge-attr-row">
+              <span class="ge-attr-key">nomenklatur</span>
+              <span id="geAttrNomenklatur" class="ge-attr-val">ki</span>
+            </div>
+            <div class="ge-attr-row">
+              <span class="ge-attr-key">norec</span>
+              <span id="geAttrNorec" class="ge-attr-val">11</span>
+            </div>
+            <div class="ge-attr-row">
+              <span class="ge-attr-key">Daerah Irigasi</span>
+              <span id="geAttrDi" class="ge-attr-val">DI Sumber Tekik</span>
+            </div>
+            <div class="ge-attr-row">
+              <span class="ge-attr-key">UPT / Wilayah</span>
+              <span id="geAttrUpt" class="ge-attr-val">Korwil Malang</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER ACTIONS (Button Edit pill persis Gambar 3) -->
+        <div class="ge-card-footer">
+          <button id="btnGeEdit" class="ge-btn-pill-edit" title="Salin & Edit Informasi Aset">
+            <i class="fa-solid fa-pencil"></i>
+            <span>Edit</span>
+          </button>
+          <button id="btnGeFocus" class="ge-btn-pill-secondary" title="Fokuskan Objek di Peta">
+            <i class="fa-solid fa-crosshairs"></i>
+            <span>Fokus Objek</span>
+          </button>
+        </div>
+      </div>
+
       <!-- FLOATING DI HIGHLIGHT BANNER (1 DI UTUH) -->
       <div id="diHighlightBanner" class="di-highlight-banner hidden">
         <div class="banner-icon">
@@ -64,10 +157,10 @@
         </div>
         <div class="banner-content">
           <div class="banner-tag">
-            <span class="pulse-indicator"></span> TAMPILAN 1 DI UTUH
+            <span class="pulse-indicator"></span> GOOGLE EARTH VIEW (1 DI UTUH)
           </div>
           <h4 id="bannerDiTitle">Nama DI</h4>
-          <span id="bannerDiStats" class="banner-stats">0 Objek Saluran & Petak</span>
+          <span id="bannerDiStats" class="banner-stats">0 Saluran • 0 Petak • 0 Bangunan</span>
         </div>
         <button id="btnCloseHighlight" class="btn-close-banner" title="Tutup Highlight & Reset">
           <i class="fa-solid fa-xmark"></i>

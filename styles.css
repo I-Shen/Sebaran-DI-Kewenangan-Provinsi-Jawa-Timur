@@ -1021,6 +1021,295 @@ input:focus, select:focus {
   color: #070d1e;
 }
 
+/* ==========================================================================
+   GOOGLE EARTH MODE & INSPECTOR PANEL (GAMBAR 2 & GAMBAR 3)
+   ========================================================================== */
+
+/* QUICK DI NAV SELECTOR */
+.di-nav-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  padding: 4px 12px;
+  border-radius: var(--radius-md);
+  color: #34d399;
+}
+
+.select-quick-di {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  max-width: 240px;
+}
+
+.select-quick-di option {
+  background: #0b142c;
+  color: #ffffff;
+}
+
+/* GOOGLE EARTH INSPECTOR CARD (GAMBAR 3) */
+.ge-inspector-card {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 340px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 110px);
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 8px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: Roboto, var(--font-sans);
+  animation: slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ge-inspector-card.hidden {
+  display: none !important;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.ge-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.ge-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ge-type-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.ge-title-wrap {
+  min-width: 0;
+}
+
+.ge-title-wrap h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ge-subtitle {
+  font-size: 0.74rem;
+  color: #64748b;
+  display: block;
+}
+
+.ge-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ge-btn-icon {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ge-btn-icon:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.ge-card-body {
+  padding: 14px 16px;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
+}
+
+/* METRICS GROUP */
+.ge-metrics-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ge-metric-item {
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.ge-metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.ge-caret {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.ge-metric-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-top: 2px;
+}
+
+.ge-metric-sub {
+  font-size: 0.78rem;
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* ATTRIBUTE LIST */
+.ge-attr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+
+.ge-attr-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 0.82rem;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ge-attr-row:last-child {
+  border-bottom: none;
+}
+
+.ge-attr-key {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.ge-attr-val {
+  color: #0f172a;
+  font-weight: 600;
+  text-align: right;
+  max-width: 65%;
+  word-break: break-word;
+}
+
+/* FOOTER ACTIONS */
+.ge-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.ge-btn-pill-edit {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+  border-radius: 9999px;
+  padding: 7px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ge-btn-pill-edit:hover {
+  background: #bae6fd;
+  color: #0369a1;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+}
+
+.ge-btn-pill-secondary {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 9999px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ge-btn-pill-secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* GOOGLE EARTH PUSHPIN LEAFLET STYLING */
+.ge-pushpin-marker {
+  cursor: pointer;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));
+  transition: transform 0.15s ease;
+}
+
+.ge-pushpin-marker:hover {
+  transform: scale(1.15);
+}
+
 /* RESPONSIVE DESIGN */
 @media (max-width: 768px) {
   .app-header {
@@ -1032,11 +1321,27 @@ input:focus, select:focus {
   .btn-icon .btn-text {
     display: none;
   }
+  .di-nav-selector-wrap {
+    padding: 3px 8px;
+  }
+  .select-quick-di {
+    max-width: 140px;
+    font-size: 0.74rem;
+  }
   .sidebar {
     top: 8px;
     left: 8px;
     bottom: 8px;
     width: calc(100vw - 16px);
+  }
+  .ge-inspector-card {
+    top: auto;
+    bottom: 16px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+    max-height: 50vh;
   }
   .map-controls-group {
     bottom: 14px;
@@ -1048,3 +1353,4 @@ input:focus, select:focus {
     max-width: none;
   }
 }
+

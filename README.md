@@ -1,83 +1,170 @@
-# Sebaran Daerah Irigasi (DI) Kewenangan Pemerintah Provinsi Jawa Timur
+# WebGIS Sebaran Daerah Irigasi (DI) Kewenangan Pemerintah Provinsi Jawa Timur
 
-Portal WebGIS interaktif berbasis Leaflet untuk memetakan sebaran seluruh **Daerah Irigasi (DI)** kewenangan Pemerintah Provinsi Jawa Timur (luasan 1.000 s.d. 3.000 Ha) berdasarkan pembaruan skema data spasial tahun 2025/2026.
+Portal WebGIS Interaktif Inventarisasi dan Pemetaan Spasial Jaringan Irigasi (Saluran, Petak Sawah, dan Bangunan) Kewenangan Pemerintah Provinsi Jawa Timur berbasis standar visualisasi **Google Earth**.
 
-![WebGIS Preview](https://raw.githubusercontent.com/leaflet/Leaflet/main/docs/docs/images/logo.png)
-
----
-
-## 🌟 Fitur Utama
-
-1. **Pencarian Koordinat Multi-Metode**:
-   - **Smart Copy-Paste**: Mendukung input gabungan format Desimal (contoh: `-7.718417, 112.909267`) maupun format Derajat Menit Detik / DMS (contoh: `7°43'6.30"S, 112°54'33.36"E`).
-   - **Input Manual (DD)**: Form pengisian terpisah untuk Latitude & Longitude.
-   - **Otomatis via GPS**: Ambil koordinat langsung dari perangkat lapangan dengan akurasi GPS tinggi (*High Accuracy Geolocation*).
-2. **Sinyal Proksimitas & Radar 5 DI Terdekat**:
-   - Saat menitik lokasi (melalui klik peta, koordinat, atau GPS), sistem secara otomatis menghitung jarak ke seluruh DI di Jawa Timur dengan rumus geodesik *Haversine*.
-   - Memberikan sinyal visual gelombang radar (*pulsing radar signal*) dan garis koneksi ke **5 DI Terdekat**.
-   - Menampilkan kartu peringkat 5 DI terdekat beserta jarak akurat dalam satuan Kilometer (`km`).
-3. **Peta Dasar Satelit Resolusi Tinggi (Satellite Hybrid)**:
-   - **Esri World Imagery + Clarity & Reference**: Menampilkan citra satelit tajam dengan toponimi lengkap (nama kota, kecamatan, kelurahan/desa, jalan raya, dan jaringan sungai).
-   - **Google Satellite Hybrid**: Citra satelit Google Maps dengan label lengkap.
-   - **OpenStreetMap** & **CartoDB Dark Matter**.
-4. **Katalog & Filter Spasial**:
-   - Filter berdasarkan 9 Unit Pelaksana Teknis (UPT) / Koordinator Wilayah (Korwil).
-   - Pencarian instan berdasarkan nama Daerah Irigasi.
-   - Popup detail berisi nama DI, UPT, koordinat desimal & DMS, jumlah file lapisan, serta tombol navigasi rute ke Google Maps.
+[![Akses WebGIS Online](https://img.shields.io/badge/WebGIS-Online%20Portal-00b4d8?style=for-the-badge&logo=leaflet&logoColor=white)](https://i-shen.github.io/Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur/)
+[![GitHub Pages](https://img.shields.io/badge/Deployment-GitHub%20Pages-success?style=for-the-badge&logo=github)](https://i-shen.github.io/Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur/)
+[![Sumber Data](https://img.shields.io/badge/Sumber%20Data-Dinas%20PUSDA%20Jatim-blue?style=for-the-badge)](https://pusda.jatimprov.go.id/)
 
 ---
 
-## 📁 Struktur Berkas
+## 🏛️ Sumber Data Resmi
+
+Seluruh data geospasial jaringan irigasi, batas petak sawah, dan inventarisasi bangunan dalam sistem WebGIS ini bersumber resmi dari:
+
+* **Instansi**: **Dinas Pekerjaan Umum Sumber Daya Air (Dinas PUSDA) Pemerintah Provinsi Jawa Timur**
+* **Basis Pembaruan**: **Skema Pemutakhiran Data Aset Jaringan Irigasi Provinsi Jawa Timur (Update 2025/2026)**
+* **Kewenangan Wilayah Sungai & Irigasi**: Daerah Irigasi (DI) lintas kabupaten/kota dengan luasan potensial **1.000 s.d. 3.000 Hektar (Ha)** sesuai amanat Permen PUPR No. 14/PRT/M/2015.
+
+### Rekapitulasi Cakupan Data:
+* **Total Daerah Irigasi (DI)**: **181 DI**
+* **Total Wilayah UPT / Korwil**: **9 Wilayah Kerja Teknis**:
+  1. **Korwil Madiun**: 39 DI
+  2. **Korwil Malang**: 32 DI
+  3. **UPT Pasuruan**: 25 DI
+  4. **UPT Kediri**: 21 DI
+  5. **UPT Bojonegoro**: 18 DI
+  6. **UPT Lumajang**: 14 DI
+  7. **UPT Bondowoso**: 13 DI
+  8. **Perwakilan Mojokerto**: 8 DI
+  9. **UPT Madura**: 5 DI
+* **Berkas Spasial Master**: 198 Berkas KMZ/KML Terintegrasi
+* **Total Fitur Spasial Aktif**: **50.507 Unsur Geospasial** (Saluran, Petak, dan Bangunan)
+
+---
+
+## 🗺️ Tampilan Spasial 1 DI Utuh (Standar Google Earth)
+
+Sesuai standar operasional Google Earth Dinas PUSDA Jawa Timur, setiap Daerah Irigasi (DI) dipetakan secara utuh ke dalam 3 komponen geometris:
+
+```
+                          ┌─────────────────────────────┐
+                          │   1 DAERAH IRIGASI (DI)     │
+                          └──────────────┬──────────────┘
+                                         │
+        ┌────────────────────────────────┼────────────────────────────────┐
+        ▼                                ▼                                ▼
+  ┌───────────────┐              ┌───────────────┐              ┌───────────────────┐
+  │ 1. GARIS      │              │ 2. POLIGON    │              │ 3. TITIK          │
+  │ Saluran Air   │              │ Petak Sawah   │              │ Bangunan Irigasi  │
+  ├───────────────┤              ├───────────────┤              ├───────────────────┤
+  │ • Warna Hijau │              │ • Warna Lime  │              │ • Simbol Yellow   │
+  │   Terang      │              │   Transparan  │              │   Pushpin Resmi   │
+  │ • Primer,     │              │ • Perhitungan │              │ • Bendung, Bagi,  │
+  │   Sekunder,   │              │   Area (m²/ha)│              │   Sadap, Talang,  │
+  │   Tersier     │              │ • Perimeter(m)│              │   Gorong-gorong   │
+  └───────────────┘              └───────────────┘              └───────────────────┘
+```
+
+1. **Garis (LineString) — Saluran Irigasi**:
+   * Melambangkan trace alur saluran pembawa air (saluran induk/primer, saluran sekunder, saluran tersier, hingga saluran pembuang).
+   * Ditampilkan dengan garis hijau terang (*lime green*, `#32CD32`) kontras tinggi di atas citra satelit.
+   * Dilengkapi informasi panjang saluran dalam satuan meter (`m`) dan kilometer (`km`).
+
+2. **Poligon (Polygon) — Petak Sawah / Daerah Layanan**:
+   * Melambangkan petak tersier dan hamparan sawah beririgasi teknis/semi teknis.
+   * Ditampilkan dengan poligon hijau kekuningan (*yellow-green/lime*, `#9ACD32`, *fill opacity* 0.45) dengan batas garis tepi hijau (`#22C55E`).
+   * Menampilkan perhitungan luas otomatis (**Area dalam m² dan Hektar / ha**) serta keliling hamparan (**Perimeter dalam meter**).
+
+3. **Titik (Point) — Bangunan Irigasi**:
+   * Melambangkan seluruh bangunan air fisik pelengkap jaringan irigasi (Bendung, Pintu Sadap, Pintu Bagi, Gorong-gorong, Talang, Jembatan, Pelimpah, Terjunan, dan Tangga Cuci).
+   * Ditampilkan menggunakan ikon **Google Earth Yellow Pushpin** (`assets/ylw-pushpin.png`) autentik.
+   * Memuat data atribut lengkap: `id_di`, `k_aset` (kode aset), `nama`, `nomenklatur`, `norec`, dan koordinat presisi.
+
+---
+
+## 🔍 Panel Inspeksi Objek (Google Earth Inspector Card)
+
+Ketika pengguna mengeklik elemen apa pun di peta (baik petak sawah, saluran, maupun pin bangunan), sistem akan memunculkan **Panel Kartu Notifikasi & Inspeksi Google Earth** di sisi kanan layar:
+
+* **Header Objek**:
+  * Ikon jenis geometri (Poligon Petak, Saluran, atau Titik Pushpin).
+  * Nama/Nomenklatur objek (contoh: `TK.1.Ka (6,27 ha)` atau `Sadap B.BD.1`).
+  * Subjudul Daerah Irigasi & UPT pengampu.
+* **Metrik Spasial**:
+  * `Area` (m² & ha) dengan indikator dropdown lipat.
+  * `Perimeter` (m) atau `Panjang Saluran` (m & km).
+* **Tabel Atribut Standar PUSDA**:
+  * `id_di`: Nomor ID unik Daerah Irigasi (contoh: `27935`).
+  * `k_aset`: Kode klasifikasi aset irigasi (contoh: `F41`, `P03`, `C06`, `B01`).
+  * `nama`: Nama objek lapangan.
+  * `nomenklatur`: Nomenklatur teknis hidraulik resmi.
+  * `norec`: Nomor rekaman inventarisasi aset.
+  * `Daerah Irigasi` & `UPT / Wilayah`.
+* **Tombol Aksi**:
+  * `Edit / Salin Data`: Menyalin seluruh rangkuman atribut teknis ke papan klip (*clipboard*).
+  * `Fokus Objek`: Mengarahkan dan memperbesar (*zoom-in*) kamera peta langsung ke objek bersangkutan.
+
+---
+
+## ⚡ Fitur Cerdas Lainnya
+
+1. **Pemilihan Cepat DI (Google Earth 1 Layar Utuh)**:
+   * Dropdown cepat di navigasi atas untuk berpindah seketika ke salah satu dari 181 DI Jawa Timur.
+   * Peta otomatis melakukan *auto-fit bounds* ke seluruh geometri DI tersebut dengan pembesaran optimal.
+
+2. **Pencarian Koordinat Multi-Metode**:
+   * **Smart Copy-Paste**: Mendukung input koordinat tunggal maupun pasangan dalam format Desimal (`-7.740856, 112.883835`) maupun Derajat Menit Detik / DMS (`7°44'27.08"S, 112°53'1.81"E`).
+   * **Input Manual Terpisah**: Kolom Latitude & Longitude terpisah.
+   * **Pengambilan GPS Otomatis**: Deteksi lokasi terkini dari satelit GPS perangkat secara langsung (*High Accuracy Geolocation*).
+
+3. **Sinyal Radar Proksimitas 5 DI Terdekat**:
+   * Begitu titik target ditentukan di peta, sistem menghitung jarak geodesik ke seluruh DI di Jawa Timur menggunakan formula *Haversine*.
+   * Menggambar garis koneksi putus-putus (*signal ray*) ke **5 Daerah Irigasi terdekat**.
+   * Menampilkan kartu ranking 5 DI terdekat beserta jarak akurat dalam satuan kilometer (`km`).
+   * Otomatis memuat dan merender jaringan DI terdekat ke layar.
+
+4. **Pilihan Basemap Satelit Resolusi Tinggi**:
+   * **Esri World Imagery + Clarity & Reference**: Citra satelit jernih dilengkapi toponimi batas provinsi, kabupaten/kota, kecamatan, desa/kelurahan, jalan raya, dan nama sungai.
+   * **Google Satellite Hybrid**: Citra satelit Google Maps resolusi tinggi.
+   * **OpenStreetMap** dan **CartoDB Dark Matter**.
+
+---
+
+## 💻 Panduan Menjalankan Sistem
+
+### Akses Langsung Online (GitHub Pages)
+Aplikasi telah terpasang dan dapat langsung diakses publik secara online tanpa instalasi:
+👉 **[https://i-shen.github.io/Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur/](https://i-shen.github.io/Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur/)**
+
+### Menjalankan di Komputer Lokal
+1. Clone repositori ini:
+   ```bash
+   git clone https://github.com/I-Shen/Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur.git
+   cd Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur
+   ```
+2. Jalankan server lokal sederhana (menggunakan Python):
+   ```bash
+   python -m http.server 8000
+   ```
+3. Buka peramban (*browser*) pada alamat:
+   `http://localhost:8000`
+
+---
+
+## 📂 Struktur Repositori
 
 ```text
 Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur/
-├── index.html              # Aplikasi WebGIS Utama
-├── styles.css              # Sistem Desain Glassmorphism & Animasi Radar
-├── app.js                  # Logika Leaflet, Geodesik Proksimitas & Parser Koordinat
+├── index.html              # Antarmuka WebGIS Utama & Panel Notifikasi
+├── styles.css              # Sistem Desain Glassmorphism & Tampilan Google Earth
+├── app.js                  # Engine Leaflet, Renderer Google Earth & Analisis Proksimitas
+├── assets/
+│   └── ylw-pushpin.png     # Ikon Yellow Pushpin Resmi Standar Google Earth
 ├── data/
-│   ├── di_jatim.json       # Database Spasial DI (Format GeoJSON/JSON)
-│   └── di_jatim.js         # Wrapper JS untuk dukungan offline & file://
-├── PRD.md                  # Product Requirement Document (PRD) Lengkap
-├── README.md               # Dokumentasi Teknis & Panduan
-└── .gitignore              # Konfigurasi Git Ignore
+│   ├── di_jatim.json       # Database Induk 181 DI Kewenangan Provinsi Jatim
+│   ├── di_jatim.js         # Wrapper JS untuk kompatibilitas offline
+│   └── geojson/            # 181 Berkas Vektor Lengkap (Saluran, Petak, Bangunan)
+│       ├── 1.json / 1.js   # DI Bedilan (Korwil Madiun)
+│       ├── 66.json / 66.js # DI Sumber Tekik (Korwil Malang - Sampel Gambar 2 & 3)
+│       └── ...             # Seluruh 181 DI Lainnya
+├── PRD.md                  # Dokumen Kebutuhan Produk (PRD) Lengkap
+└── README.md               # Dokumentasi Teknis & Uraian Proyek
 ```
 
 ---
 
-## 🚀 Panduan Deploy Online ke GitHub Pages (1-Klik)
-
-Aplikasi ini dirancang menggunakan arsitektur *Client-Side Jamstack* (100% statis), sehingga **dapat di-host secara gratis dan online langsung di GitHub Pages**:
-
-### Langkah 1: Buat Repository di Akun GitHub Anda
-1. Buka [GitHub](https://github.com/new).
-2. Beri nama repository: `Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur` (atau nama lain yang Anda inginkan).
-3. Biarkan sebagai **Public** dan jangan centang "Initialize with README" (karena sudah ada di lokal).
-4. Klik **Create repository**.
-
-### Langkah 2: Hubungkan & Push dari Komputer Anda
-Buka terminal / PowerShell di dalam folder ini, lalu jalankan:
-
-```bash
-# 1. Pastikan remote mengarah ke repository GitHub Anda
-git remote add origin https://github.com/<USERNAME-ANDA>/Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur.git
-
-# 2. Push ke GitHub
-git branch -M main
-git push -u origin main
-```
-
-### Langkah 3: Aktifkan GitHub Pages
-1. Pada halaman repository GitHub Anda, klik tab **Settings**.
-2. Di menu sebelah kiri, pilih **Pages**.
-3. Di bawah bagian **Build and deployment**:
-   - **Source**: Pilih `Deploy from a branch`.
-   - **Branch**: Pilih `main` dan folder `/(root)`.
-4. Klik **Save**.
-5. Tunggu 1–2 menit, tautan online WebGIS Anda akan aktif di:
-   `https://<USERNAME-ANDA>.github.io/Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur/`
-
----
-
-## 📜 Lisensi & Sumber Data
-- **Data Spasial**: Dinas Pekerjaan Umum Sumber Daya Air Provinsi Jawa Timur (Skema Update 2025/2026).
-- **Engine**: Leaflet.js (Open-Source BSD-2-Clause).
+## 📜 Hak Cipta & Lisensi
+* **Data Spasial**: Hak cipta data milik **Dinas Pekerjaan Umum Sumber Daya Air Pemerintah Provinsi Jawa Timur**.
+* **Pengembangan WebGIS**: Dibuat untuk keperluan visualisasi, pemantauan, dan analisis spasial daerah irigasi.
+* **Perpustakaan Peta**: [Leaflet.js](https://leafletjs.com/) (Lisensi BSD-2-Clause).

@@ -99,23 +99,62 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // GOOGLE EARTH ICON CONFIGURATION
+  const gePushpinIcon = L.icon({
+    iconUrl: 'assets/ylw-pushpin.png',
+    iconSize: [32, 32],
+    iconAnchor: [10, 32],
+    popupAnchor: [6, -30],
+    className: 'ge-pushpin-marker'
+  });
+
+  let selectedVectorLayer = null;
+
   // 4. LOAD & RENDER DATA SEBARAN DI
   function loadDiData() {
     if (window.DI_JATIM_DATA && Array.isArray(window.DI_JATIM_DATA)) {
       allDiData = window.DI_JATIM_DATA;
-      renderDiMarkers(allDiData);
+      onDiDataLoaded(allDiData);
     } else {
       fetch('data/di_jatim.json')
         .then(res => res.json())
         .then(data => {
           allDiData = data;
-          renderDiMarkers(allDiData);
+          onDiDataLoaded(allDiData);
         })
         .catch(err => {
           console.error('Gagal memuat data DI:', err);
           showToast('Peringatan Data', 'Gagal memuat file spasial DI.');
         });
     }
+  }
+
+  function onDiDataLoaded(dataList) {
+    renderDiMarkers(dataList);
+    populateQuickDiSelector(dataList);
+
+    // Auto-focus on DI Sumber Tekik (ID 66) as shown in user's Google Earth reference
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialDiId = parseInt(urlParams.get('di')) || 66;
+    if (initialDiId) {
+      setTimeout(() => {
+        highlightDi(initialDiId);
+      }, 350);
+    }
+  }
+
+  function populateQuickDiSelector(dataList) {
+    const selectEl = document.getElementById('selectQuickDi');
+    if (!selectEl) return;
+    selectEl.innerHTML = '<option value="">Pilih DI (Tampilan Google Earth)...</option>';
+    
+    const sorted = [...dataList].sort((a, b) => a.nama_di.localeCompare(b.nama_di));
+    sorted.forEach(di => {
+      const opt = document.createElement('option');
+      opt.value = di.id;
+      opt.textContent = `${di.nama_di} (${di.upt})`;
+      selectEl.appendChild(opt);
+    });
   }
 
   function createCustomMarkerIcon(upt) {
@@ -157,11 +196,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="value">${di.lon.toFixed(6)}° (${dmsLon})</span>
           </div>
           <div class="di-popup-files">
-            <i class="fa-solid fa-file-shield"></i> Sumber: ${di.files.length} File KMZ/KML
+            <i class="fa-solid fa-file-shield"></i> Sumber Data: Dinas PUSDA Prov. Jawa Timur
           </div>
           <div class="di-popup-actions" style="flex-direction: column; gap: 6px;">
-            <button onclick="window.highlightDi(${di.id})" class="btn-popup" style="background: rgba(0, 229, 255, 0.25); border-color: #00e5ff;">
-              <i class="fa-solid fa-draw-polygon"></i> Tampilkan 1 DI Utuh (Highlight)
+            <button onclick="window.highlightDi(${di.id})" class="btn-popup" style="background: rgba(16, 185, 129, 0.25); border-color: #10b981; color: #34d399;">
+              <i class="fa-solid fa-earth-asia"></i> Buka Tampilan Google Earth (1 DI Utuh)
             </button>
             <a href="https://www.google.com/maps?q=${di.lat},${di.lon}" target="_blank" class="btn-popup">
               <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Google Maps
@@ -178,14 +217,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('statDisplayed').textContent = dataList.length;
   }
 
-  // 5. VECTOR GEOJSON LOADER & 1 DI UTUH HIGHLIGHT ENGINE
+  // 5. VECTOR GEOJSON LOADER & GOOGLE EARTH RENDERING ENGINE (GAMBAR 2 & GAMBAR 3)
   function loadDiGeoJson(diId, callback) {
     if (window.DI_GEOJSON_CACHE && window.DI_GEOJSON_CACHE[diId]) {
       callback(window.DI_GEOJSON_CACHE[diId]);
       return;
     }
 
-    // Try fetch (for HTTP/HTTPS / GitHub Pages)
     fetch(`data/geojson/${diId}.json`)
       .then(res => res.json())
       .then(data => {
@@ -194,7 +232,6 @@ document.addEventListener('DOMContentLoaded', () => {
         callback(data);
       })
       .catch(() => {
-        // Fallback for file:// protocol: load via dynamic script tag
         const script = document.createElement('script');
         script.src = `data/geojson/${diId}.js`;
         script.onload = () => {
@@ -211,11 +248,105 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
+  // SHOW GOOGLE EARTH INSPECTOR CARD (GAMBAR 3)
+  function showGoogleEarthInspector(feature, di, layer) {
+    const p = feature.properties || {};
+    const geomType = feature.geometry ? feature.geometry.type : '';
+    const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
+
+    const inspector = document.getElementById('googleEarthInspector');
+    if (!inspector) return;
+
+    // Header Icon
+    const iconContainer = document.getElementById('geHeaderIcon');
+    if (tipe === 'petak') {
+      iconContainer.innerHTML = '<i class="fa-solid fa-draw-polygon" style="color: #16a34a;"></i>';
+    } else if (tipe === 'saluran') {
+      iconContainer.innerHTML = '<i class="fa-solid fa-route" style="color: #0284c7;"></i>';
+    } else {
+      iconContainer.innerHTML = '<i class="fa-solid fa-map-pin" style="color: #eab308;"></i>';
+    }
+
+    // Title
+    const title = p.name || p.nomenklatur || p.nama || (tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi'));
+    document.getElementById('geTitle').textContent = title;
+    document.getElementById('geTitle').title = title;
+
+    // Subtitle
+    const subLabel = tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi');
+    document.getElementById('geSubTitle').textContent = `${subLabel} • ${p.di_name || (di ? di.nama_di : 'Daerah Irigasi')}`;
+
+    // Metrics Group
+    const areaRow = document.getElementById('geAreaRow');
+    const perimeterRow = document.getElementById('gePerimeterRow');
+    const perimeterLabel = document.getElementById('gePerimeterLabel');
+
+    if (tipe === 'petak') {
+      areaRow.style.display = 'block';
+      document.getElementById('geAreaVal').textContent = p.area_m2 || '-';
+      document.getElementById('geAreaHaVal').textContent = p.area_ha || '-';
+      perimeterLabel.textContent = 'Perimeter';
+      document.getElementById('gePerimeterVal').textContent = p.perimeter_m || '-';
+    } else if (tipe === 'saluran') {
+      areaRow.style.display = 'none';
+      perimeterLabel.textContent = 'Panjang Saluran';
+      document.getElementById('gePerimeterVal').textContent = p.panjang_m ? `${p.panjang_m} (${p.panjang_km})` : '-';
+    } else {
+      areaRow.style.display = 'none';
+      perimeterLabel.textContent = 'Koordinat Bangunan';
+      if (feature.geometry && feature.geometry.coordinates) {
+        const coords = feature.geometry.coordinates;
+        document.getElementById('gePerimeterVal').textContent = `${coords[1].toFixed(6)}, ${coords[0].toFixed(6)}`;
+      } else {
+        document.getElementById('gePerimeterVal').textContent = '-';
+      }
+    }
+
+    // Attributes list (id_di, k_aset, nama, nomenklatur, norec)
+    document.getElementById('geAttrIdDi').textContent = p.id_di || (di ? di.id : '-');
+    document.getElementById('geAttrKAset').textContent = p.k_aset || '-';
+    document.getElementById('geAttrNama').textContent = p.nama || p.name || '-';
+    document.getElementById('geAttrNomenklatur').textContent = p.nomenklatur || '-';
+    document.getElementById('geAttrNorec').textContent = p.norec || '-';
+    document.getElementById('geAttrDi').textContent = p.di_name || (di ? di.nama_di : '-');
+    document.getElementById('geAttrUpt').textContent = p.upt || (di ? di.upt : '-');
+
+    // Highlight active layer style
+    if (selectedVectorLayer && selectedVectorLayer.setStyle) {
+      const oldType = (selectedVectorLayer.feature && selectedVectorLayer.feature.properties && selectedVectorLayer.feature.properties.tipe) || '';
+      if (oldType === 'saluran') {
+        selectedVectorLayer.setStyle({ color: '#32cd32', weight: 3.5 });
+      } else if (oldType === 'petak') {
+        selectedVectorLayer.setStyle({ color: '#22c55e', weight: 2.2, fillOpacity: 0.45 });
+      }
+    }
+    selectedVectorLayer = layer;
+    if (layer && layer.setStyle) {
+      if (tipe === 'saluran') {
+        layer.setStyle({ color: '#00e5ff', weight: 5 });
+      } else if (tipe === 'petak') {
+        layer.setStyle({ color: '#00e5ff', weight: 3.5, fillOpacity: 0.65 });
+      }
+    }
+
+    // Store active feature
+    window.currentGeActiveFeature = { feature, di, layer };
+
+    // Show card
+    inspector.classList.remove('hidden');
+  }
+
   function highlightDi(diId) {
     const item = diMarkersMap.get(diId) || { data: allDiData.find(d => d.id === diId) };
     if (!item || !item.data) return;
 
     const di = item.data;
+
+    // Update Quick Selector Dropdown
+    const selectEl = document.getElementById('selectQuickDi');
+    if (selectEl && selectEl.value !== String(diId)) {
+      selectEl.value = String(diId);
+    }
 
     // Clear previous highlight
     if (currentHighlightLayer) {
@@ -230,71 +361,97 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Create stylish GeoJSON vector layer
+      let countSaluran = 0;
+      let countPetak = 0;
+      let countBangunan = 0;
+      let firstInteractiveFeature = null;
+      let firstInteractiveLayer = null;
+
+      // Create Google Earth style GeoJSON vector layer (GAMBAR 2)
       currentHighlightLayer = L.geoJSON(geoJsonData, {
         style: function(feature) {
-          const type = (feature.properties && feature.properties.type) || '';
-          if (type === 'saluran') {
+          const p = feature.properties || {};
+          const geomType = feature.geometry ? feature.geometry.type : '';
+          const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
+
+          if (tipe === 'saluran' || geomType === 'LineString') {
+            countSaluran++;
             return {
-              color: '#00e5ff',
+              color: '#32cd32',      // Hijau Saluran Google Earth (Gambar 2)
               weight: 3.5,
-              opacity: 0.95,
+              opacity: 1.0,
               lineCap: 'round',
               lineJoin: 'round'
             };
           } else {
-            // Petak sawah / poligon
+            countPetak++;
             return {
-              fillColor: '#00e5ff',
-              fillOpacity: 0.28,
-              color: '#38bdf8',
-              weight: 1.8,
-              dashArray: '3, 4'
+              fillColor: '#9acd32',  // Kuning-Hijau Lime Petak Sawah Google Earth (Gambar 2)
+              fillOpacity: 0.45,
+              color: '#22c55e',      // Garis Batas Hijau Terang
+              weight: 2.2,
+              lineCap: 'round',
+              lineJoin: 'round'
             };
           }
         },
         pointToLayer: function(feature, latlng) {
-          return L.circleMarker(latlng, {
-            radius: 5,
-            fillColor: '#f59e0b',
-            color: '#ffffff',
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.9
-          });
+          countBangunan++;
+          // Google Earth Yellow Pushpin (Gambar 2)
+          return L.marker(latlng, { icon: gePushpinIcon });
         },
         onEachFeature: function(feature, layer) {
           const p = feature.properties || {};
-          const typeLabel = p.type === 'saluran' ? 'Saluran Irigasi' : (p.type === 'petak' ? 'Petak Sawah' : 'Objek DI');
-          layer.bindTooltip(`<strong>${di.nama_di}</strong><br><small>${typeLabel}</small>`, { sticky: true });
+          const geomType = feature.geometry ? feature.geometry.type : '';
+          const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
+          const title = p.name || p.nomenklatur || p.nama || (tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi'));
+
+          // Tooltip on hover
+          layer.bindTooltip(`<strong>${title}</strong><br><small style="color: #10b981;">${p.di_name || di.nama_di} (${tipe})</small>`, {
+            sticky: true,
+            className: 'ge-map-tooltip'
+          });
+
+          // Click event: Opens Google Earth Inspector Card (GAMBAR 3)
+          layer.on('click', (e) => {
+            L.DomEvent.stopPropagation(e);
+            showGoogleEarthInspector(feature, di, layer);
+          });
+
+          if (!firstInteractiveFeature && (tipe === 'petak' || tipe === 'saluran')) {
+            firstInteractiveFeature = feature;
+            firstInteractiveLayer = layer;
+          }
         }
       });
 
       currentHighlightLayer.addTo(map);
 
-      // Auto-fit 1 DI UTUH to entire screen
+      // Auto-fit 1 DI UTUH to entire screen (1 Layar Penuh)
       const bounds = currentHighlightLayer.getBounds();
       if (bounds && bounds.isValid()) {
         map.fitBounds(bounds, {
-          padding: [50, 50],
-          maxZoom: 16,
-          duration: 1.2
+          padding: [60, 60],
+          maxZoom: 17,
+          duration: 1.0
         });
       } else {
-        map.flyTo([di.lat, di.lon], 15, { duration: 1.2 });
+        map.flyTo([di.lat, di.lon], 15, { duration: 1.0 });
       }
 
-      // Update and display floating Highlight Banner
+      // Update Floating Banner
       const banner = document.getElementById('diHighlightBanner');
       document.getElementById('bannerDiTitle').textContent = `${di.nama_di} (${di.upt})`;
-      document.getElementById('bannerDiStats').textContent = `${geoJsonData.features.length} Objek Saluran & Petak Sawah`;
+      document.getElementById('bannerDiStats').textContent = `${countSaluran} Saluran • ${countPetak} Petak • ${countBangunan} Bangunan`;
       banner.classList.remove('hidden');
 
-      // Open marker popup
-      if (item.marker) {
-        markerClusterGroup.zoomToShowLayer(item.marker, () => {
-          item.marker.openPopup();
-        });
+      // Automatically inspect the primary feature (or matching user reference like TK.1.Ka)
+      let featureToInspect = geoJsonData.features.find(f => (f.properties && f.properties.name && f.properties.name.includes('TK.1.Ka')));
+      if (!featureToInspect) {
+        featureToInspect = firstInteractiveFeature || geoJsonData.features[0];
+      }
+      if (featureToInspect) {
+        showGoogleEarthInspector(featureToInspect, di, firstInteractiveLayer);
       }
     });
   }
@@ -306,15 +463,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const banner = document.getElementById('diHighlightBanner');
     if (banner) banner.classList.add('hidden');
+    const inspector = document.getElementById('googleEarthInspector');
+    if (inspector) inspector.classList.add('hidden');
+    selectedVectorLayer = null;
   }
 
-  // Export highlightDi to global window for popup button access
+  // Export highlightDi to global window
   window.highlightDi = highlightDi;
 
   document.getElementById('btnCloseHighlight').addEventListener('click', () => {
     clearHighlight();
     map.flyTo(EAST_JAVA_CENTER, DEFAULT_ZOOM, { duration: 1.2 });
   });
+
+  // GOOGLE EARTH INSPECTOR CONTROLS
+  document.getElementById('btnCloseGeInspector').addEventListener('click', () => {
+    document.getElementById('googleEarthInspector').classList.add('hidden');
+  });
+
+  document.getElementById('btnGeMenu').addEventListener('click', () => {
+    showToast('Menu Objek', 'Objek tersinkronisasi dengan Database Dinas PUSDA Provinsi Jawa Timur.');
+  });
+
+  document.getElementById('btnGeEdit').addEventListener('click', () => {
+    if (window.currentGeActiveFeature) {
+      const f = window.currentGeActiveFeature.feature;
+      const p = f.properties || {};
+      const dataStr = `[Dinas PUSDA Jatim] Objek: ${p.name || p.nama || '-'} | DI: ${p.di_name || '-'} | Nomenklatur: ${p.nomenklatur || '-'} | Kode Aset: ${p.k_aset || '-'} | Luas/Panjang: ${p.area_m2 || p.panjang_m || '-'}`;
+      navigator.clipboard.writeText(dataStr).then(() => {
+        showToast('Berhasil Menyalin Data', `Atribut objek <strong>${p.name || p.nomenklatur || 'Aset'}</strong> berhasil disalin ke clipboard!`);
+      }).catch(() => {
+        showToast('Info Data', `Atribut: ${p.name || 'Aset'}`);
+      });
+    }
+  });
+
+  document.getElementById('btnGeFocus').addEventListener('click', () => {
+    if (window.currentGeActiveFeature && window.currentGeActiveFeature.layer) {
+      const layer = window.currentGeActiveFeature.layer;
+      if (layer.getBounds && layer.getBounds().isValid()) {
+        map.fitBounds(layer.getBounds(), { maxZoom: 18, duration: 0.8 });
+      } else if (layer.getLatLng) {
+        map.flyTo(layer.getLatLng(), 18, { duration: 0.8 });
+      }
+    }
+  });
+
+  // QUICK DI SELECTOR CHANGE EVENT
+  const selectQuickDi = document.getElementById('selectQuickDi');
+  if (selectQuickDi) {
+    selectQuickDi.addEventListener('change', (e) => {
+      const val = parseInt(e.target.value);
+      if (val) {
+        highlightDi(val);
+      }
+    });
+  }
 
   // 6. COORDINATE CONVERSION & PARSER UTILITIES
   function formatDdToDms(val, type) {
