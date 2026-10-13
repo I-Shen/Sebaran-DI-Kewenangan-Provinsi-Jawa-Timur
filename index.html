@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sebaran DI Kewenangan Provinsi Jawa Timur | WebGIS Portal</title>
+  <meta name="description" content="Portal WebGIS Interaktif Sebaran Daerah Irigasi (DI) Kewenangan Pemerintah Provinsi Jawa Timur dengan pencarian koordinat dan deteksi 5 DI terdekat real-time.">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- TOP NAVBAR -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-water"></i>
+        </div>
+        <div class="brand-text">
+          <h1>Sebaran DI Kewenangan Jawa Timur</h1>
+          <p>Dinas Pekerjaan Umum Sumber Daya Air • Update Skema 2025/2026</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnToggleSidebar" class="btn-icon" title="Buka/Tutup Panel Kontrol">
+          <i class="fa-solid fa-sliders"></i>
+          <span class="btn-text">Panel Kontrol</span>
+        </button>
+        <button id="btnQuickGps" class="btn-glow-primary" title="Deteksi Lokasi GPS Anda">
+          <i class="fa-solid fa-crosshairs"></i>
+          <span>GPS Saya</span>
+        </button>
+        <button id="btnResetView" class="btn-icon" title="Reset Tampilan Jawa Timur">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="main-content">
+      <!-- LEAFLET MAP CONTAINER -->
+      <div id="map"></div>
+
+      <!-- FLOATING SEARCH BAR & PROXIMITY PANEL (GLASS PANEL) -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-title">
+            <i class="fa-solid fa-compass"></i>
+            <h2>Pencarian & Analisis Spasial</h2>
+          </div>
+          <button id="btnCloseSidebar" class="btn-close-sidebar">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="sidebar-body">
+          <!-- SECTION 1: SEARCH COORDINATES -->
+          <div class="card glass-card">
+            <div class="card-title">
+              <i class="fa-solid fa-location-dot"></i>
+              <h3>Cari Koordinat Lokasi</h3>
+            </div>
+            
+            <div class="tab-container">
+              <button class="tab-btn active" data-tab="tab-smart">Pasti / Copy-Paste</button>
+              <button class="tab-btn" data-tab="tab-manual">Input Terpisah (DD)</button>
+            </div>
+
+            <!-- TAB 1: SMART PASTE -->
+            <div id="tab-smart" class="tab-content active">
+              <p class="input-hint">Paste koordinat gabungan (Desimal atau DMS). Contoh: <code>-7.718417, 112.909267</code> atau <code>7°43'6.30"S 112°54'33.36"E</code></p>
+              <div class="input-group">
+                <input type="text" id="smartCoordInput" placeholder="Paste koordinat di sini..." autocomplete="off">
+                <button id="btnSmartSearch" class="btn-action">
+                  <i class="fa-solid fa-magnifying-glass"></i> Cari
+                </button>
+              </div>
+            </div>
+
+            <!-- TAB 2: MANUAL INPUT -->
+            <div id="tab-manual" class="tab-content">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="manualLat">Latitude (Lintang)</label>
+                  <input type="number" id="manualLat" step="any" placeholder="-7.718417">
+                </div>
+                <div class="form-group">
+                  <label for="manualLon">Longitude (Bujur)</label>
+                  <input type="number" id="manualLon" step="any" placeholder="112.909267">
+                </div>
+              </div>
+              <button id="btnManualSearch" class="btn-action btn-full">
+                <i class="fa-solid fa-location-crosshairs"></i> Tentukan Titik Koordinat
+              </button>
+            </div>
+
+            <div class="gps-strip">
+              <button id="btnGpsInside" class="btn-outline-gps">
+                <i class="fa-solid fa-satellite-dish"></i> Ambil Koordinat Otomatis via GPS
+              </button>
+              <span id="gpsStatus" class="gps-status-text"></span>
+            </div>
+          </div>
+
+          <!-- SECTION 2: NEAREST 5 DI PROXIMITY SIGNAL -->
+          <div id="proximitySection" class="card glass-card proximity-card">
+            <div class="card-title justify-between">
+              <div class="flex-align">
+                <span class="radar-dot"></span>
+                <h3>Sinyal 5 DI Terdekat</h3>
+              </div>
+              <span id="pinpointCoordBadge" class="coord-badge">-</span>
+            </div>
+
+            <div id="proximityEmpty" class="proximity-empty">
+              <i class="fa-solid fa-map-pin"></i>
+              <p>Klik di peta atau masukkan koordinat untuk menghitung sinyal jarak ke 5 Daerah Irigasi terdekat.</p>
+            </div>
+
+            <div id="proximityList" class="proximity-list hidden">
+              <!-- Dynamically populated 5 nearest DIs -->
+            </div>
+          </div>
+
+          <!-- SECTION 3: FILTER UPT & SEARCH DI -->
+          <div class="card glass-card">
+            <div class="card-title">
+              <i class="fa-solid fa-filter"></i>
+              <h3>Filter Sebaran DI</h3>
+            </div>
+
+            <div class="form-group">
+              <label for="uptFilter">Unit Pelaksana Teknis (UPT / Korwil)</label>
+              <select id="uptFilter" class="select-styled">
+                <option value="ALL">Semua UPT / Wilayah (181 DI)</option>
+                <option value="Korwil Madiun">Korwil Madiun (39 DI)</option>
+                <option value="Korwil Malang">Korwil Malang (32 DI)</option>
+                <option value="Perwakilan Mojokerto">Perwakilan Mojokerto (8 DI)</option>
+                <option value="UPT Bojonegoro">UPT Bojonegoro (18 DI)</option>
+                <option value="UPT Bondowoso">UPT Bondowoso (13 DI)</option>
+                <option value="UPT Kediri">UPT Kediri (21 DI)</option>
+                <option value="UPT Lumajang">UPT Lumajang (14 DI)</option>
+                <option value="UPT Madura">UPT Madura (5 DI)</option>
+                <option value="UPT Pasuruan">UPT Pasuruan (25 DI)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="searchDiName">Cari Nama Daerah Irigasi</label>
+              <div class="search-input-wrapper">
+                <i class="fa-solid fa-search"></i>
+                <input type="text" id="searchDiName" placeholder="Ketik nama DI (mis: Pleret, Bedilan)...">
+              </div>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat-box">
+                <span class="stat-num" id="statDisplayed">181</span>
+                <span class="stat-lbl">DI Ditampilkan</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-num">9</span>
+                <span class="stat-lbl">UPT / Korwil</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-num">198</span>
+                <span class="stat-lbl">File KMZ/KML</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIDEBAR FOOTER -->
+        <div class="sidebar-footer">
+          <p>© 2026 Dinas PU Sumber Daya Air Provinsi Jawa Timur</p>
+        </div>
+      </aside>
+
+      <!-- FLOATING TOAST NOTIFICATION -->
+      <div id="toastNotification" class="toast-notification hidden">
+        <div class="toast-icon">
+          <i class="fa-solid fa-bell"></i>
+        </div>
+        <div class="toast-content">
+          <h4 id="toastTitle">Sinyal Proksimitas</h4>
+          <p id="toastMessage">Menghitung DI terdekat...</p>
+        </div>
+        <button id="btnToastClose" class="toast-close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- BASEMAP SELECTOR POPUP BUTTON (FLOATING BOTTOM RIGHT) -->
+      <div class="map-controls-group">
+        <div class="basemap-selector-wrap">
+          <button id="btnToggleBasemap" class="btn-map-control" title="Pilih Peta Satelit / Hybrid">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>Basemap</span>
+          </button>
+          <div id="basemapDropdown" class="basemap-dropdown hidden">
+            <div class="dropdown-header">Pilih Peta Dasar</div>
+            <button class="basemap-opt active" data-layer="esri-satellite">
+              <i class="fa-solid fa-satellite"></i> Esri Satelit Hybrid HD (Lengkap)
+            </button>
+            <button class="basemap-opt" data-layer="google-satellite">
+              <i class="fa-solid fa-earth-asia"></i> Google Hybrid Satelit
+            </button>
+            <button class="basemap-opt" data-layer="osm">
+              <i class="fa-solid fa-map"></i> OpenStreetMap Jalan & Sungai
+            </button>
+            <button class="basemap-opt" data-layer="carto-dark">
+              <i class="fa-solid fa-moon"></i> CartoDB Dark Matter
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Leaflet JS & MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- Spatial Data JS wrapper -->
+  <script src="data/di_jatim.js"></script>
+
+  <!-- Application JS -->
+  <script src="app.js"></script>
+</body>
+</html>
