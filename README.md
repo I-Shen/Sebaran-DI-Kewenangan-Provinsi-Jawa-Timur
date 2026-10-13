@@ -48,27 +48,28 @@ Sesuai standar operasional Google Earth Dinas PUSDA Jawa Timur, setiap Daerah Ir
   │ 1. GARIS      │              │ 2. POLIGON    │              │ 3. TITIK          │
   │ Saluran Air   │              │ Petak Sawah   │              │ Bangunan Irigasi  │
   ├───────────────┤              ├───────────────┤              ├───────────────────┤
-  │ • Warna Hijau │              │ • Warna Lime  │              │ • Simbol Yellow   │
-  │   Terang      │              │   Transparan  │              │   Pushpin Resmi   │
-  │ • Primer,     │              │ • Perhitungan │              │ • Bendung, Bagi,  │
-  │   Sekunder,   │              │   Area (m²/ha)│              │   Sadap, Talang,  │
-  │   Tersier     │              │ • Perimeter(m)│              │   Gorong-gorong   │
+  │ • Inti: Biru  │              │ • Isi: Hijau  │              │ • Pushpin Kuning  │
+  │   Muda Air    │              │   Sawah Alami │              │   Google Earth    │
+  │ • Casing:     │              │ • Border:     │              │ • Ring Titik:     │
+  │   Warna DI    │              │   Warna DI    │              │   Warna DI        │
   └───────────────┘              └───────────────┘              └───────────────────┘
 ```
 
-1. **Garis (LineString) — Saluran Irigasi**:
-   * Melambangkan trace alur saluran pembawa air (saluran induk/primer, saluran sekunder, saluran tersier, hingga saluran pembuang).
-   * Ditampilkan dengan garis hijau terang (*lime green*, `#32CD32`) kontras tinggi di atas citra satelit.
+1. **Garis (LineString) — Saluran Irigasi (Dual-Stroke Cartography)**:
+   * Melambangkan trace alur saluran pembawa air (saluran induk/primer, sekunder, tersier, hingga pembuang).
+   * **Inti Saluran (Water Core)**: Warna biru muda air alami (`#00e5ff`, *width* 2.8px) menjaga semiotika alami air di peta satelit.
+   * **Garis Pembungkus (Outer Casing)**: Garis luar ganda (*dual-stroke casing*, *width* 6.2px) berwarna pembeda DI (misal: Amber Oranye `#f59e0b` pada Rank 1, Rose Magenta `#ec4899` pada Rank 2, dsb.) sehingga batas kepemilikan antar DI terlihat jelas saat perbandingan.
    * Dilengkapi informasi panjang saluran dalam satuan meter (`m`) dan kilometer (`km`).
 
 2. **Poligon (Polygon) — Petak Sawah / Daerah Layanan**:
    * Melambangkan petak tersier dan hamparan sawah beririgasi teknis/semi teknis.
-   * Ditampilkan dengan poligon hijau kekuningan (*yellow-green/lime*, `#9ACD32`, *fill opacity* 0.45) dengan batas garis tepi hijau (`#22C55E`).
+   * **Isi Poligon (Paddy Fill)**: Warna hijau sawah alami (`#22c55e`, *fill opacity* 0.35) transparan agar kontur petak citra satelit tetap terlihat.
+   * **Garis Pembatas (Boundary Stroke)**: Garis batas tepi tegas (*width* 2.8px) mengikuti warna pembeda DI masing-masing.
    * Menampilkan perhitungan luas otomatis (**Area dalam m² dan Hektar / ha**) serta keliling hamparan (**Perimeter dalam meter**).
 
 3. **Titik (Point) — Bangunan Irigasi**:
-   * Melambangkan seluruh bangunan air fisik pelengkap jaringan irigasi (Bendung, Pintu Sadap, Pintu Bagi, Gorong-gorong, Talang, Jembatan, Pelimpah, Terjunan, dan Tangga Cuci).
-   * Ditampilkan menggunakan ikon **Google Earth Yellow Pushpin** (`assets/ylw-pushpin.png`) autentik.
+   * Melambangkan seluruh bangunan air fisik pelengkap jaringan irigasi (Bendung, Pintu Sadap, Pintu Bagi, Gorong-gorong, Talang, dsb.).
+   * Ditampilkan menggunakan ikon **Google Earth Yellow Pushpin** (`assets/ylw-pushpin.png`) autentik dengan tambahan **cincin aksen (*indicator ring*)** warna DI pada titik tancap jarum.
    * Memuat data atribut lengkap: `id_di`, `k_aset` (kode aset), `nama`, `nomenklatur`, `norec`, dan koordinat presisi.
 
 ---

@@ -106,14 +106,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // GOOGLE EARTH ICON CONFIGURATION
-  const gePushpinIcon = L.icon({
-    iconUrl: 'assets/ylw-pushpin.png',
-    iconSize: [32, 32],
-    iconAnchor: [10, 32],
-    popupAnchor: [6, -30],
-    className: 'ge-pushpin-marker'
-  });
+  // GOOGLE EARTH ICON CONFIGURATION WITH RANK COLOR ANCHOR RING
+  function createGePushpinIcon(colorCfg) {
+    const ringColor = (colorCfg && colorCfg.color) ? colorCfg.color : '#f59e0b';
+    return L.divIcon({
+      className: 'ge-pushpin-marker',
+      html: `
+        <div class="ge-pin-wrapper">
+          <img src="assets/ylw-pushpin.png" class="ge-pushpin-img" alt="Bangunan">
+          <div class="ge-pin-ring" style="background: ${ringColor}; box-shadow: 0 0 8px ${ringColor};"></div>
+        </div>
+      `,
+      iconSize: [32, 34],
+      iconAnchor: [10, 32],
+      popupAnchor: [6, -30]
+    });
+  }
+  const gePushpinIcon = createGePushpinIcon({ color: '#f59e0b' });
 
   let selectedVectorLayer = null;
 
@@ -321,21 +330,25 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('geAttrDi').textContent = p.di_name || (di ? di.nama_di : '-');
     document.getElementById('geAttrUpt').textContent = p.upt || (di ? di.upt : '-');
 
-    // Highlight active layer style
-    if (selectedVectorLayer && selectedVectorLayer.setStyle) {
-      const oldType = (selectedVectorLayer.feature && selectedVectorLayer.feature.properties && selectedVectorLayer.feature.properties.tipe) || '';
-      if (oldType === 'saluran') {
-        selectedVectorLayer.setStyle({ color: '#32cd32', weight: 3.5 });
-      } else if (oldType === 'petak') {
-        selectedVectorLayer.setStyle({ color: '#22c55e', weight: 2.2, fillOpacity: 0.45 });
-      }
+    // Highlight active layer style without corrupting original rank styling
+    if (selectedVectorLayer && selectedVectorLayer._originalStyle && selectedVectorLayer.setStyle) {
+      selectedVectorLayer.setStyle(selectedVectorLayer._originalStyle);
     }
     selectedVectorLayer = layer;
     if (layer && layer.setStyle) {
+      if (!layer._originalStyle && layer.options) {
+        layer._originalStyle = {
+          color: layer.options.color,
+          weight: layer.options.weight,
+          fillColor: layer.options.fillColor,
+          fillOpacity: layer.options.fillOpacity,
+          opacity: layer.options.opacity
+        };
+      }
       if (tipe === 'saluran') {
-        layer.setStyle({ color: '#00e5ff', weight: 5 });
+        layer.setStyle({ color: '#ffffff', weight: 4.8, opacity: 1.0 });
       } else if (tipe === 'petak') {
-        layer.setStyle({ color: '#00e5ff', weight: 3.5, fillOpacity: 0.65 });
+        layer.setStyle({ fillColor: '#4ade80', fillOpacity: 0.65, weight: 3.8, color: '#ffffff' });
       }
     }
 
@@ -346,17 +359,17 @@ document.addEventListener('DOMContentLoaded', () => {
     inspector.classList.remove('hidden');
   }
 
-  // Multi-DI Highlight Storage: Map<diId, { di, layer, rankIndex, colorCfg, counts }>
+  // Multi-DI Highlight Storage: Map<diId, { di, layer, mainLayer, rankIndex, colorCfg, counts }>
   const activeHighlightedDis = new Map();
   let currentNearest5List = [];
 
-  // Ranked Color Palettes for Comparing 5 Nearest DIs
+  // Ranked Color Palettes for Comparing 5 Nearest DIs (Opsi A: Pembeda di tepi saluran & border petak)
   const NEAREST_RANK_COLORS = [
-    { rank: 1, color: '#10b981', fill: '#10b981', badgeBg: '#10b981', badgeText: '#022c22', name: 'Rank 1 (Hijau Emerald)' },
-    { rank: 2, color: '#00e5ff', fill: '#00e5ff', badgeBg: '#00e5ff', badgeText: '#082f49', name: 'Rank 2 (Vibrant Cyan)' },
-    { rank: 3, color: '#f59e0b', fill: '#f59e0b', badgeBg: '#f59e0b', badgeText: '#451a03', name: 'Rank 3 (Amber Oranye)' },
-    { rank: 4, color: '#a855f7', fill: '#a855f7', badgeBg: '#a855f7', badgeText: '#3b0764', name: 'Rank 4 (Violet Ungu)' },
-    { rank: 5, color: '#ec4899', fill: '#ec4899', badgeBg: '#ec4899', badgeText: '#500724', name: 'Rank 5 (Rose Pink)' }
+    { rank: 1, color: '#f59e0b', fill: '#f59e0b', badgeBg: '#f59e0b', badgeText: '#451a03', name: 'Rank 1 (Amber Oranye)' },
+    { rank: 2, color: '#ec4899', fill: '#ec4899', badgeBg: '#ec4899', badgeText: '#500724', name: 'Rank 2 (Rose Magenta)' },
+    { rank: 3, color: '#8b5cf6', fill: '#8b5cf6', badgeBg: '#8b5cf6', badgeText: '#2e1065', name: 'Rank 3 (Electric Violet)' },
+    { rank: 4, color: '#eab308', fill: '#eab308', badgeBg: '#eab308', badgeText: '#422006', name: 'Rank 4 (Kuning Emas)' },
+    { rank: 5, color: '#14b8a6', fill: '#14b8a6', badgeBg: '#14b8a6', badgeText: '#042f2e', name: 'Rank 5 (Aqua Mint)' }
   ];
 
   function loadAndAddDiHighlight(diId, rankIndex = 0, autoFit = true, callback = null) {
@@ -387,17 +400,44 @@ document.addEventListener('DOMContentLoaded', () => {
       let firstInteractiveFeature = null;
       let firstInteractiveLayer = null;
 
-      const layer = L.geoJSON(geoJsonData, {
+      const pushpinIcon = createGePushpinIcon(colorCfg);
+
+      // Feature Group penampung dual-stroke casing dan layer utama
+      const diFeatureGroup = L.featureGroup();
+
+      // 1. UNDERLAY CASING LAYER: Garis Luar Pembungkus Saluran Irigasi (Opsi A - Gambar 1)
+      const casingLayer = L.geoJSON(geoJsonData, {
+        filter: function(feature) {
+          const geomType = feature.geometry ? feature.geometry.type : '';
+          const p = feature.properties || {};
+          const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
+          return tipe === 'saluran' || geomType === 'LineString' || geomType === 'MultiLineString';
+        },
+        style: function() {
+          return {
+            color: colorCfg.color, // Warna pembeda DI di tepi saluran (contoh: amber orange Gambar 1)
+            weight: 6.2,           // Casing lebar membungkus inti air
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round',
+            interactive: false     // Mouse event tembus langsung ke inti saluran
+          };
+        }
+      });
+      casingLayer.addTo(diFeatureGroup);
+
+      // 2. MAIN INTERACTIVE VECTOR LAYER (Inti Saluran Air, Petak Sawah, Bangunan)
+      const mainLayer = L.geoJSON(geoJsonData, {
         style: function(feature) {
           const p = feature.properties || {};
           const geomType = feature.geometry ? feature.geometry.type : '';
           const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
 
-          if (tipe === 'saluran' || geomType === 'LineString') {
+          if (tipe === 'saluran' || geomType === 'LineString' || geomType === 'MultiLineString') {
             countSaluran++;
             return {
-              color: colorCfg.color, // Color coded by DI rank
-              weight: 3.5,
+              color: '#00e5ff', // Inti saluran: Biru muda air alami (Gambar 1)
+              weight: 2.8,
               opacity: 1.0,
               lineCap: 'round',
               lineJoin: 'round'
@@ -405,10 +445,11 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             countPetak++;
             return {
-              fillColor: colorCfg.fill, // Color coded by DI rank
-              fillOpacity: 0.38,
-              color: colorCfg.color,
-              weight: 2.2,
+              fillColor: '#22c55e',  // Warna petak sawah: Hijau alami (Gambar 1)
+              fillOpacity: 0.35,      // Transparan agar tekstur citra satelit tetap terlihat
+              color: colorCfg.color, // Border petak sawah: Warna pembeda DI (Gambar 1)
+              weight: 2.8,
+              opacity: 1.0,
               lineCap: 'round',
               lineJoin: 'round'
             };
@@ -416,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         pointToLayer: function(feature, latlng) {
           countBangunan++;
-          return L.marker(latlng, { icon: gePushpinIcon });
+          return L.marker(latlng, { icon: pushpinIcon });
         },
         onEachFeature: function(feature, featLayer) {
           const p = feature.properties || {};
@@ -424,7 +465,18 @@ document.addEventListener('DOMContentLoaded', () => {
           const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
           const title = p.name || p.nomenklatur || p.nama || (tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi'));
 
-          // Tooltip on hover with DI identification
+          // Simpan original style agar tidak rusak saat di-hover / di-klik
+          if (featLayer.options) {
+            featLayer._originalStyle = {
+              color: featLayer.options.color,
+              weight: featLayer.options.weight,
+              fillColor: featLayer.options.fillColor,
+              fillOpacity: featLayer.options.fillOpacity,
+              opacity: featLayer.options.opacity
+            };
+          }
+
+          // Tooltip on hover dengan identitas DI & rank color badge
           featLayer.bindTooltip(`
             <div style="font-family: Inter, sans-serif;">
               <span style="display: inline-block; background: ${colorCfg.badgeBg}; color: ${colorCfg.badgeText}; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 3px; margin-bottom: 2px;">#${rankIndex + 1} ${di.nama_di}</span><br>
@@ -433,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           `, { sticky: true, className: 'ge-map-tooltip' });
 
-          // Click event opens Inspector Card (Gambar 3)
+          // Click event membuka Google Earth Inspector Card (Gambar 3)
           featLayer.on('click', (e) => {
             L.DomEvent.stopPropagation(e);
             showGoogleEarthInspector(feature, di, featLayer);
@@ -445,12 +497,14 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       });
+      mainLayer.addTo(diFeatureGroup);
 
-      layer.addTo(map);
+      diFeatureGroup.addTo(map);
 
       activeHighlightedDis.set(diId, {
         di,
-        layer,
+        layer: diFeatureGroup,
+        mainLayer,
         rankIndex,
         colorCfg,
         counts: { saluran: countSaluran, petak: countPetak, bangunan: countBangunan }
@@ -481,6 +535,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function clearAllHighlightedDis() {
+    if (selectedVectorLayer && selectedVectorLayer._originalStyle && selectedVectorLayer.setStyle) {
+      selectedVectorLayer.setStyle(selectedVectorLayer._originalStyle);
+      selectedVectorLayer = null;
+    }
     activeHighlightedDis.forEach(entry => {
       map.removeLayer(entry.layer);
     });
@@ -489,7 +547,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (banner) banner.classList.add('hidden');
     const inspector = document.getElementById('googleEarthInspector');
     if (inspector) inspector.classList.add('hidden');
-    selectedVectorLayer = null;
     updateCompareCheckboxes();
   }
 
@@ -574,7 +631,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Auto inspect first feature
       const entry = activeHighlightedDis.get(diId);
       if (entry) {
-        entry.layer.eachLayer((featLayer) => {
+        const targetLayer = entry.mainLayer || entry.layer;
+        targetLayer.eachLayer((featLayer) => {
           if (!window.currentGeActiveFeature && featLayer.feature) {
             showGoogleEarthInspector(featLayer.feature, entry.di, featLayer);
           }
@@ -597,6 +655,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // GOOGLE EARTH INSPECTOR CONTROLS
   document.getElementById('btnCloseGeInspector').addEventListener('click', () => {
     document.getElementById('googleEarthInspector').classList.add('hidden');
+    if (selectedVectorLayer && selectedVectorLayer._originalStyle && selectedVectorLayer.setStyle) {
+      selectedVectorLayer.setStyle(selectedVectorLayer._originalStyle);
+      selectedVectorLayer = null;
+    }
   });
 
   document.getElementById('btnGeMenu').addEventListener('click', () => {
@@ -762,13 +824,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Take Top 5 nearest DIs
     const nearest5 = proximityData.slice(0, 5);
 
-    // Draw animated connection polylines to Top 5
+    // Draw animated connection polylines to Top 5 with matching rank color
     nearest5.forEach((di, index) => {
       const isNearest = index === 0;
+      const rankColor = NEAREST_RANK_COLORS[index % NEAREST_RANK_COLORS.length].color;
       const polyline = L.polyline([[lat, lon], [di.lat, di.lon]], {
-        color: isNearest ? '#10b981' : '#f59e0b',
-        weight: isNearest ? 3 : 1.5,
-        opacity: isNearest ? 0.9 : 0.6,
+        color: rankColor,
+        weight: isNearest ? 3.5 : 2.0,
+        opacity: isNearest ? 0.95 : 0.75,
         dashArray: '6, 8',
         lineCap: 'round'
       }).addTo(map);

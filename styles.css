@@ -575,6 +575,56 @@ input:focus, select:focus {
   font-weight: 500;
 }
 
+.banner-legend-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+.chip-symbol {
+  display: inline-block;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.chip-symbol.canal-sym {
+  width: 14px;
+  height: 6px;
+  background: #00e5ff;
+  border-top: 1.5px solid #f59e0b;
+  border-bottom: 1.5px solid #f59e0b;
+}
+
+.chip-symbol.plot-sym {
+  width: 10px;
+  height: 10px;
+  background: rgba(34, 197, 94, 0.5);
+  border: 1.5px solid #f59e0b;
+}
+
+.chip-symbol.pin-sym {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #eab308;
+  border: 1.5px solid #ffffff;
+}
+
 .btn-close-banner {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--border-glass);
@@ -672,6 +722,19 @@ input:focus, select:focus {
   color: #fca5a5;
 }
 
+.proximity-legend-hint {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 5px 8px;
+  border-radius: 4px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  line-height: 1.3;
+}
+
 /* NEAREST DI ITEM (MULTI-HIGHLIGHT & COMPARE) */
 .nearest-item {
   background: rgba(0, 0, 0, 0.35);
@@ -698,28 +761,28 @@ input:focus, select:focus {
 }
 
 .nearest-item.active-highlight.rank-1 {
-  border: 1.5px solid #10b981;
-  background: rgba(16, 185, 129, 0.14);
-}
-
-.nearest-item.active-highlight.rank-2 {
-  border: 1.5px solid #00e5ff;
-  background: rgba(0, 229, 255, 0.14);
-}
-
-.nearest-item.active-highlight.rank-3 {
   border: 1.5px solid #f59e0b;
   background: rgba(245, 158, 11, 0.14);
 }
 
+.nearest-item.active-highlight.rank-2 {
+  border: 1.5px solid #ec4899;
+  background: rgba(236, 72, 153, 0.14);
+}
+
+.nearest-item.active-highlight.rank-3 {
+  border: 1.5px solid #8b5cf6;
+  background: rgba(139, 92, 246, 0.14);
+}
+
 .nearest-item.active-highlight.rank-4 {
-  border: 1.5px solid #a855f7;
-  background: rgba(168, 85, 247, 0.14);
+  border: 1.5px solid #eab308;
+  background: rgba(234, 179, 8, 0.14);
 }
 
 .nearest-item.active-highlight.rank-5 {
-  border: 1.5px solid #ec4899;
-  background: rgba(236, 72, 153, 0.14);
+  border: 1.5px solid #14b8a6;
+  background: rgba(20, 184, 166, 0.14);
 }
 
 .compare-toggle-wrap {
@@ -1438,14 +1501,43 @@ input:focus, select:focus {
   border-color: #94a3b8;
 }
 
-/* GOOGLE EARTH PUSHPIN LEAFLET STYLING */
+/* GOOGLE EARTH PUSHPIN LEAFLET STYLING (WITH RANK COLOR ANCHOR RING) */
 .ge-pushpin-marker {
   cursor: pointer;
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.4));
+  background: transparent !important;
+  border: none !important;
+}
+
+.ge-pin-wrapper {
+  position: relative;
+  width: 32px;
+  height: 36px;
+  cursor: pointer;
+}
+
+.ge-pushpin-img {
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45));
   transition: transform 0.15s ease;
 }
 
-.ge-pushpin-marker:hover {
+.ge-pin-ring {
+  position: absolute;
+  left: 6px;
+  top: 28px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  pointer-events: none;
+  animation: radar-ping 1.8s infinite ease-out;
+}
+
+.ge-pin-wrapper:hover .ge-pushpin-img {
   transform: scale(1.15);
 }
 
