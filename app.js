@@ -1,6 +1,6 @@
 /**
  * SEBARAN DAERAH IRIGASI (DI) KEWENANGAN PROVINSI JAWA TIMUR
- * Core WebGIS Logic: Leaflet Engine, Coordinate Parsing, Proximity Radar
+ * Core WebGIS Logic: Leaflet Engine, Coordinate Parsing, Proximity Radar, Vector GeoJSON Highlighting
  * Author: Antigravity AI & Dinas PU SDA Jawa Timur
  */
 
@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let markerClusterGroup;
   let allDiData = [];
   let diMarkersMap = new Map();
+  let currentHighlightLayer = null;
 
   // UPT Badge Color Config
   const UPT_CONFIG = {
@@ -104,7 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
       allDiData = window.DI_JATIM_DATA;
       renderDiMarkers(allDiData);
     } else {
-      // Fallback fetch if opened over HTTP/HTTPS
       fetch('data/di_jatim.json')
         .then(res => res.json())
         .then(data => {
@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch(err => {
           console.error('Gagal memuat data DI:', err);
-          showToast('Peringatan Data', 'Gagal memuat file spasial DI. Pastikan folder data lengkap.');
+          showToast('Peringatan Data', 'Gagal memuat file spasial DI.');
         });
     }
   }
@@ -156,16 +156,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="label">Longitude</span>
             <span class="value">${di.lon.toFixed(6)}° (${dmsLon})</span>
           </div>
-          <div class="di-popup-row" id="popupDistRow-${di.id}" style="display: none;">
-            <span class="label">Jarak dari Titik</span>
-            <span class="value text-warning" id="popupDistVal-${di.id}">-</span>
-          </div>
           <div class="di-popup-files">
-            <i class="fa-solid fa-file-shield"></i> Lapisan: ${di.files.length} File KMZ/KML
+            <i class="fa-solid fa-file-shield"></i> Sumber: ${di.files.length} File KMZ/KML
           </div>
-          <div class="di-popup-actions">
+          <div class="di-popup-actions" style="flex-direction: column; gap: 6px;">
+            <button onclick="window.highlightDi(${di.id})" class="btn-popup" style="background: rgba(0, 229, 255, 0.25); border-color: #00e5ff;">
+              <i class="fa-solid fa-draw-polygon"></i> Tampilkan 1 DI Utuh (Highlight)
+            </button>
             <a href="https://www.google.com/maps?q=${di.lat},${di.lon}" target="_blank" class="btn-popup">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> Google Maps
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka di Google Maps
             </a>
           </div>
         </div>
@@ -179,7 +178,145 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('statDisplayed').textContent = dataList.length;
   }
 
-  // 5. COORDINATE CONVERSION & PARSER UTILITIES
+  // 5. VECTOR GEOJSON LOADER & 1 DI UTUH HIGHLIGHT ENGINE
+  function loadDiGeoJson(diId, callback) {
+    if (window.DI_GEOJSON_CACHE && window.DI_GEOJSON_CACHE[diId]) {
+      callback(window.DI_GEOJSON_CACHE[diId]);
+      return;
+    }
+
+    // Try fetch (for HTTP/HTTPS / GitHub Pages)
+    fetch(`data/geojson/${diId}.json`)
+      .then(res => res.json())
+      .then(data => {
+        window.DI_GEOJSON_CACHE = window.DI_GEOJSON_CACHE || {};
+        window.DI_GEOJSON_CACHE[diId] = data;
+        callback(data);
+      })
+      .catch(() => {
+        // Fallback for file:// protocol: load via dynamic script tag
+        const script = document.createElement('script');
+        script.src = `data/geojson/${diId}.js`;
+        script.onload = () => {
+          if (window.DI_GEOJSON_CACHE && window.DI_GEOJSON_CACHE[diId]) {
+            callback(window.DI_GEOJSON_CACHE[diId]);
+          } else {
+            showToast('Informasi Spasial', 'Data vektor detail untuk DI ini sedang disiapkan.');
+          }
+        };
+        script.onerror = () => {
+          showToast('Informasi Spasial', 'Gagal memuat file vektor DI.');
+        };
+        document.head.appendChild(script);
+      });
+  }
+
+  function highlightDi(diId) {
+    const item = diMarkersMap.get(diId) || { data: allDiData.find(d => d.id === diId) };
+    if (!item || !item.data) return;
+
+    const di = item.data;
+
+    // Clear previous highlight
+    if (currentHighlightLayer) {
+      map.removeLayer(currentHighlightLayer);
+      currentHighlightLayer = null;
+    }
+
+    loadDiGeoJson(diId, (geoJsonData) => {
+      if (!geoJsonData || !geoJsonData.features || geoJsonData.features.length === 0) {
+        showToast('Info Peta', `Memusatkan tampilan ke ${di.nama_di}.`);
+        map.flyTo([di.lat, di.lon], 15, { duration: 1.2 });
+        return;
+      }
+
+      // Create stylish GeoJSON vector layer
+      currentHighlightLayer = L.geoJSON(geoJsonData, {
+        style: function(feature) {
+          const type = (feature.properties && feature.properties.type) || '';
+          if (type === 'saluran') {
+            return {
+              color: '#00e5ff',
+              weight: 3.5,
+              opacity: 0.95,
+              lineCap: 'round',
+              lineJoin: 'round'
+            };
+          } else {
+            // Petak sawah / poligon
+            return {
+              fillColor: '#00e5ff',
+              fillOpacity: 0.28,
+              color: '#38bdf8',
+              weight: 1.8,
+              dashArray: '3, 4'
+            };
+          }
+        },
+        pointToLayer: function(feature, latlng) {
+          return L.circleMarker(latlng, {
+            radius: 5,
+            fillColor: '#f59e0b',
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9
+          });
+        },
+        onEachFeature: function(feature, layer) {
+          const p = feature.properties || {};
+          const typeLabel = p.type === 'saluran' ? 'Saluran Irigasi' : (p.type === 'petak' ? 'Petak Sawah' : 'Objek DI');
+          layer.bindTooltip(`<strong>${di.nama_di}</strong><br><small>${typeLabel}</small>`, { sticky: true });
+        }
+      });
+
+      currentHighlightLayer.addTo(map);
+
+      // Auto-fit 1 DI UTUH to entire screen
+      const bounds = currentHighlightLayer.getBounds();
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: 16,
+          duration: 1.2
+        });
+      } else {
+        map.flyTo([di.lat, di.lon], 15, { duration: 1.2 });
+      }
+
+      // Update and display floating Highlight Banner
+      const banner = document.getElementById('diHighlightBanner');
+      document.getElementById('bannerDiTitle').textContent = `${di.nama_di} (${di.upt})`;
+      document.getElementById('bannerDiStats').textContent = `${geoJsonData.features.length} Objek Saluran & Petak Sawah`;
+      banner.classList.remove('hidden');
+
+      // Open marker popup
+      if (item.marker) {
+        markerClusterGroup.zoomToShowLayer(item.marker, () => {
+          item.marker.openPopup();
+        });
+      }
+    });
+  }
+
+  function clearHighlight() {
+    if (currentHighlightLayer) {
+      map.removeLayer(currentHighlightLayer);
+      currentHighlightLayer = null;
+    }
+    const banner = document.getElementById('diHighlightBanner');
+    if (banner) banner.classList.add('hidden');
+  }
+
+  // Export highlightDi to global window for popup button access
+  window.highlightDi = highlightDi;
+
+  document.getElementById('btnCloseHighlight').addEventListener('click', () => {
+    clearHighlight();
+    map.flyTo(EAST_JAVA_CENTER, DEFAULT_ZOOM, { duration: 1.2 });
+  });
+
+  // 6. COORDINATE CONVERSION & PARSER UTILITIES
   function formatDdToDms(val, type) {
     const isNegative = val < 0;
     const absVal = Math.abs(val);
@@ -199,10 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return dd;
   }
 
-  /**
-   * Smart Coordinate Parser:
-   * Accepts DD (-7.718417, 112.909267) or DMS (7°43'6.30"S, 112°54'33.36"E)
-   */
   function parseCoordinateString(inputStr) {
     if (!inputStr) return null;
     let str = inputStr.trim().replace(/,/g, ' ').replace(/\s+/g, ' ');
@@ -230,11 +363,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (numMatches && numMatches.length >= 2) {
       const lat = parseFloat(numMatches[0]);
       const lon = parseFloat(numMatches[1]);
-      // Validate reasonable coordinates for Indonesia/Java (Lat: -11 to -5, Lon: 105 to 118)
       if (lat >= -12 && lat <= -4 && lon >= 105 && lon <= 118) {
         return { lat, lon };
       }
-      // If swapped (lon first)
       if (lon >= -12 && lon <= -4 && lat >= 105 && lat <= 118) {
         return { lat: lon, lon: lat };
       }
@@ -244,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return null;
   }
 
-  // 6. GEODESIC HAVERSINE DISTANCE (KM)
+  // 7. GEODESIC HAVERSINE DISTANCE (KM)
   function calculateDistanceKm(lat1, lon1, lat2, lon2) {
     const R = 6371; // Earth Radius in km
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -257,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return R * c;
   }
 
-  // 7. PINPOINT & PROXIMITY SIGNAL (RADAR CORE FEATURE)
+  // 8. PINPOINT & PROXIMITY SIGNAL (RADAR CORE FEATURE)
   function setPinpointLocation(lat, lon, sourceLabel = 'Titik Lokasi') {
     // Clean previous pinpoint and polylines
     if (activePinpointMarker) {
@@ -324,7 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Populate Sidebar 5 DI Terdekat
-    renderNearestList(nearest5, lat, lon);
+    renderNearestList(nearest5);
 
     // Show Notification Toast
     if (nearest5.length > 0) {
@@ -340,29 +471,13 @@ document.addEventListener('DOMContentLoaded', () => {
     map.flyToBounds(fitBounds, { padding: [60, 60], maxZoom: 14, duration: 1 });
   }
 
-  let currentNearestItems = [];
-  let currentTargetCoords = null;
-
-  function renderNearestList(nearestItems, targetLat, targetLon) {
-    currentNearestItems = nearestItems;
-    currentTargetCoords = { lat: targetLat, lon: targetLon };
-
+  function renderNearestList(nearestItems) {
     const listContainer = document.getElementById('proximityList');
     const emptyContainer = document.getElementById('proximityEmpty');
-    const actionsContainer = document.getElementById('proximityActions');
 
     emptyContainer.style.display = 'none';
     listContainer.classList.remove('hidden');
-    if (actionsContainer) actionsContainer.classList.remove('hidden');
     listContainer.innerHTML = '';
-
-    // Distance warning if top 1 > 25 km
-    if (nearestItems.length > 0 && nearestItems[0].distance > 25) {
-      const warnEl = document.createElement('div');
-      warnEl.style.cssText = 'background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 8px 10px; font-size: 0.72rem; color: #fca5a5; margin-bottom: 6px;';
-      warnEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Peringatan Radius:</strong> DI terdekat berjarak <strong>${nearestItems[0].distance.toFixed(2)} km</strong> (mungkin di luar jangkauan layanan irigasi provinsi).`;
-      listContainer.appendChild(warnEl);
-    }
 
     nearestItems.forEach((item, idx) => {
       const rank = idx + 1;
@@ -382,68 +497,14 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
 
       itemEl.addEventListener('click', () => {
-        focusOnDi(item.id);
+        highlightDi(item.id);
       });
 
       listContainer.appendChild(itemEl);
     });
   }
 
-  // Generate Report Text
-  function generateReportText() {
-    if (!currentTargetCoords || currentNearestItems.length === 0) return '';
-    const dmsLat = formatDdToDms(currentTargetCoords.lat, 'lat');
-    const dmsLon = formatDdToDms(currentTargetCoords.lon, 'lon');
-
-    let text = `*LAPORAN PROKSIMITAS DAERAH IRIGASI (DI) PROVINSI JAWA TIMUR*\n`;
-    text += `Titik Koordinat: ${currentTargetCoords.lat.toFixed(6)}, ${currentTargetCoords.lon.toFixed(6)}\n`;
-    text += `Format DMS: ${dmsLat}, ${dmsLon}\n`;
-    text += `Google Maps: https://www.google.com/maps?q=${currentTargetCoords.lat},${currentTargetCoords.lon}\n\n`;
-    text += `*5 DI Terdekat:*\n`;
-
-    currentNearestItems.forEach((item, idx) => {
-      text += `${idx + 1}. ${item.nama_di} (${item.upt}) - Jarak: ${item.distance.toFixed(2)} km\n`;
-    });
-
-    text += `\n_Dinas PU Sumber Daya Air Provinsi Jawa Timur (WebGIS Portal)_`;
-    return text;
-  }
-
-  // Setup WhatsApp & Copy Event Listeners
-  const btnShareWa = document.getElementById('btnShareWa');
-  if (btnShareWa) {
-    btnShareWa.addEventListener('click', () => {
-      const text = generateReportText();
-      if (!text) return;
-      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.open(waUrl, '_blank');
-    });
-  }
-
-  const btnCopyReport = document.getElementById('btnCopyReport');
-  if (btnCopyReport) {
-    btnCopyReport.addEventListener('click', () => {
-      const text = generateReportText();
-      if (!text) return;
-      navigator.clipboard.writeText(text).then(() => {
-        showToast('Laporan Disalin!', 'Teks ringkasan 5 DI terdekat berhasil disalin ke clipboard.');
-      }).catch(() => {
-        showToast('Gagal Salin', 'Silakan izinkan akses clipboard browser.');
-      });
-    });
-  }
-
-  function focusOnDi(diId) {
-    const item = diMarkersMap.get(diId);
-    if (item) {
-      const marker = item.marker;
-      markerClusterGroup.zoomToShowLayer(marker, () => {
-        marker.openPopup();
-      });
-    }
-  }
-
-  // 8. TOAST NOTIFICATION UTILITY
+  // 9. TOAST NOTIFICATION UTILITY
   function showToast(title, message) {
     const toast = document.getElementById('toastNotification');
     document.getElementById('toastTitle').textContent = title;
@@ -461,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('toastNotification').classList.add('hidden');
   });
 
-  // 9. EVENT LISTENERS: SEARCH COORDINATES
+  // 10. EVENT LISTENERS: SEARCH COORDINATES
   // Tab Switching
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -533,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btnQuickGps').addEventListener('click', handleGpsClick);
   document.getElementById('btnGpsInside').addEventListener('click', handleGpsClick);
 
-  // 10. FILTER & LIVE SEARCH
+  // 11. FILTER & LIVE SEARCH
   function applyFilters() {
     const selectedUpt = document.getElementById('uptFilter').value;
     const query = document.getElementById('searchDiName').value.toLowerCase().trim();
@@ -550,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('uptFilter').addEventListener('change', applyFilters);
   document.getElementById('searchDiName').addEventListener('input', applyFilters);
 
-  // 11. BASEMAP SWITCHER
+  // 12. BASEMAP SWITCHER
   const btnToggleBasemap = document.getElementById('btnToggleBasemap');
   const basemapDropdown = document.getElementById('basemapDropdown');
 
@@ -580,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 12. SIDEBAR TOGGLE & RESET VIEW
+  // 13. SIDEBAR TOGGLE & RESET VIEW
   const sidebar = document.getElementById('sidebar');
   document.getElementById('btnToggleSidebar').addEventListener('click', () => {
     sidebar.classList.toggle('hidden');
@@ -590,6 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btnResetView').addEventListener('click', () => {
+    clearHighlight();
     map.flyTo(EAST_JAVA_CENTER, DEFAULT_ZOOM, { duration: 1.2 });
   });
 

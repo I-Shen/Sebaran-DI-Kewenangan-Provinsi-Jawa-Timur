@@ -57,6 +57,23 @@
       <!-- LEAFLET MAP CONTAINER -->
       <div id="map"></div>
 
+      <!-- FLOATING DI HIGHLIGHT BANNER (1 DI UTUH) -->
+      <div id="diHighlightBanner" class="di-highlight-banner hidden">
+        <div class="banner-icon">
+          <i class="fa-solid fa-draw-polygon"></i>
+        </div>
+        <div class="banner-content">
+          <div class="banner-tag">
+            <span class="pulse-indicator"></span> TAMPILAN 1 DI UTUH
+          </div>
+          <h4 id="bannerDiTitle">Nama DI</h4>
+          <span id="bannerDiStats" class="banner-stats">0 Objek Saluran & Petak</span>
+        </div>
+        <button id="btnCloseHighlight" class="btn-close-banner" title="Tutup Highlight & Reset">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
       <!-- FLOATING SEARCH BAR & PROXIMITY PANEL (GLASS PANEL) -->
       <aside id="sidebar" class="sidebar">
         <div class="sidebar-header">
@@ -135,15 +152,6 @@
 
             <div id="proximityList" class="proximity-list hidden">
               <!-- Dynamically populated 5 nearest DIs -->
-            </div>
-
-            <div id="proximityActions" class="proximity-actions hidden">
-              <button id="btnShareWa" class="btn-action-share btn-wa" title="Kirim ringkasan laporan ke WhatsApp">
-                <i class="fa-brands fa-whatsapp"></i> Bagikan WA
-              </button>
-              <button id="btnCopyReport" class="btn-action-share btn-copy" title="Salin teks laporan ke clipboard">
-                <i class="fa-solid fa-copy"></i> Salin Teks
-              </button>
             </div>
           </div>
 
