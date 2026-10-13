@@ -6,8 +6,12 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // 1. STATE & CONFIGURATION
-  const EAST_JAVA_CENTER = [-7.75, 112.55];
+  const EAST_JAVA_CENTER = [-7.75, 112.75];
   const DEFAULT_ZOOM = 8;
+  const EAST_JAVA_BOUNDS = [
+    [-8.85, 110.85], // Barat Daya (Pacitan/Bojonegoro/Ngawi)
+    [-6.70, 114.75]  // Timur Laut (Madura/Situbondo/Banyuwangi)
+  ];
   
   let map;
   let currentBasemap;
@@ -73,6 +77,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     currentBasemap = basemapLayers['esri-satellite'];
 
+    // Inisialisasi awal: kunci batas langsung 1 Provinsi Jawa Timur utuh
+    map.fitBounds(EAST_JAVA_BOUNDS, { padding: [15, 15] });
+
     // Add Zoom Control to bottom-right
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -133,13 +140,16 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDiMarkers(dataList);
     populateQuickDiSelector(dataList);
 
-    // Auto-focus on DI Sumber Tekik (ID 66) as shown in user's Google Earth reference
+    // Tampilan awal saat link pertama kali dibuka: 1 Provinsi Jawa Timur utuh
     const urlParams = new URLSearchParams(window.location.search);
-    const initialDiId = parseInt(urlParams.get('di')) || 66;
+    const initialDiId = parseInt(urlParams.get('di'));
     if (initialDiId) {
       setTimeout(() => {
         highlightDi(initialDiId);
       }, 350);
+    } else {
+      // Tetap pada zoom 1 Provinsi Jawa Timur utuh
+      map.fitBounds(EAST_JAVA_BOUNDS, { padding: [20, 20] });
     }
   }
 
@@ -473,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btnCloseHighlight').addEventListener('click', () => {
     clearHighlight();
-    map.flyTo(EAST_JAVA_CENTER, DEFAULT_ZOOM, { duration: 1.2 });
+    map.fitBounds(EAST_JAVA_BOUNDS, { padding: [20, 20], duration: 1.0 });
   });
 
   // GOOGLE EARTH INSPECTOR CONTROLS
@@ -856,7 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btnResetView').addEventListener('click', () => {
     clearHighlight();
-    map.flyTo(EAST_JAVA_CENTER, DEFAULT_ZOOM, { duration: 1.2 });
+    map.fitBounds(EAST_JAVA_BOUNDS, { padding: [20, 20], duration: 1.0 });
   });
 
   // START APPLICATION
