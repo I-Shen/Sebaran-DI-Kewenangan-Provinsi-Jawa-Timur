@@ -62,7 +62,14 @@ Saat pengguna menentukan titik lokasi (melalui klik peta, input koordinat, atau 
   - Menampilkan nama UPT pengelola.
   - Tombol aksi *"Fokus Lokasi"* (*fly-to animation*) untuk mengarahkan kamera peta langsung ke DI tersebut.
 
-#### 4.3 Peta Dasar Satelit Resolusi Tinggi & Layer Administrasi (Core Feature 3)
+#### 4.3 Visualisasi Vektor & Highlight 1 DI Utuh (Core Feature 3)
+Saat pengguna mengklik suatu Daerah Irigasi (baik dari marker peta, daftar 5 DI terdekat, maupun pencarian):
+- **Pemuatan Vektor Geometri Spasial**: Sistem secara instan memuat data GeoJSON vektor lengkap (jaringan garis saluran dan poligon petak sawah) dari DI tersebut.
+- **Efek Visual Highlight**: Saluran irigasi di-highlight dengan garis neon cyan menyala (*glowing cyan*), dan petak sawah di-highlight dengan poligon semi-transparan.
+- **Tampilan 1 Layar Penuh (*Auto-Adjust Screen Zoom*)**: Peta secara otomatis menyesuaikan zoom dan batas layar (*fitBounds*) sehingga **seluruh 1 DI utuh beserta jaringan saluran dan petaknya termuat pas di satu layar**.
+- **Floating Highlight Banner**: Menampilkan ringkasan nama DI, UPT pengelola, jumlah objek saluran & petak yang sedang aktif, serta tombol satu-klik untuk mereset tampilan.
+
+#### 4.4 Peta Dasar Satelit Resolusi Tinggi & Layer Administrasi (Core Feature 4)
 Menggunakan Leaflet.js dengan pilihan basemap:
 1. **Google Satellite Hybrid**: Citra satelit Google Maps dilengkapi jalan raya, nama kota/kecamatan, dan toponimi.
 2. **Esri World Imagery + Clarity**: Citra satelit resolusi tinggi dengan detail geomorfologi dan saluran air.
