@@ -340,13 +340,29 @@ document.addEventListener('DOMContentLoaded', () => {
     map.flyToBounds(fitBounds, { padding: [60, 60], maxZoom: 14, duration: 1 });
   }
 
+  let currentNearestItems = [];
+  let currentTargetCoords = null;
+
   function renderNearestList(nearestItems, targetLat, targetLon) {
+    currentNearestItems = nearestItems;
+    currentTargetCoords = { lat: targetLat, lon: targetLon };
+
     const listContainer = document.getElementById('proximityList');
     const emptyContainer = document.getElementById('proximityEmpty');
+    const actionsContainer = document.getElementById('proximityActions');
 
     emptyContainer.style.display = 'none';
     listContainer.classList.remove('hidden');
+    if (actionsContainer) actionsContainer.classList.remove('hidden');
     listContainer.innerHTML = '';
+
+    // Distance warning if top 1 > 25 km
+    if (nearestItems.length > 0 && nearestItems[0].distance > 25) {
+      const warnEl = document.createElement('div');
+      warnEl.style.cssText = 'background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 8px 10px; font-size: 0.72rem; color: #fca5a5; margin-bottom: 6px;';
+      warnEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Peringatan Radius:</strong> DI terdekat berjarak <strong>${nearestItems[0].distance.toFixed(2)} km</strong> (mungkin di luar jangkauan layanan irigasi provinsi).`;
+      listContainer.appendChild(warnEl);
+    }
 
     nearestItems.forEach((item, idx) => {
       const rank = idx + 1;
@@ -370,6 +386,50 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       listContainer.appendChild(itemEl);
+    });
+  }
+
+  // Generate Report Text
+  function generateReportText() {
+    if (!currentTargetCoords || currentNearestItems.length === 0) return '';
+    const dmsLat = formatDdToDms(currentTargetCoords.lat, 'lat');
+    const dmsLon = formatDdToDms(currentTargetCoords.lon, 'lon');
+
+    let text = `*LAPORAN PROKSIMITAS DAERAH IRIGASI (DI) PROVINSI JAWA TIMUR*\n`;
+    text += `Titik Koordinat: ${currentTargetCoords.lat.toFixed(6)}, ${currentTargetCoords.lon.toFixed(6)}\n`;
+    text += `Format DMS: ${dmsLat}, ${dmsLon}\n`;
+    text += `Google Maps: https://www.google.com/maps?q=${currentTargetCoords.lat},${currentTargetCoords.lon}\n\n`;
+    text += `*5 DI Terdekat:*\n`;
+
+    currentNearestItems.forEach((item, idx) => {
+      text += `${idx + 1}. ${item.nama_di} (${item.upt}) - Jarak: ${item.distance.toFixed(2)} km\n`;
+    });
+
+    text += `\n_Dinas PU Sumber Daya Air Provinsi Jawa Timur (WebGIS Portal)_`;
+    return text;
+  }
+
+  // Setup WhatsApp & Copy Event Listeners
+  const btnShareWa = document.getElementById('btnShareWa');
+  if (btnShareWa) {
+    btnShareWa.addEventListener('click', () => {
+      const text = generateReportText();
+      if (!text) return;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, '_blank');
+    });
+  }
+
+  const btnCopyReport = document.getElementById('btnCopyReport');
+  if (btnCopyReport) {
+    btnCopyReport.addEventListener('click', () => {
+      const text = generateReportText();
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Laporan Disalin!', 'Teks ringkasan 5 DI terdekat berhasil disalin ke clipboard.');
+      }).catch(() => {
+        showToast('Gagal Salin', 'Silakan izinkan akses clipboard browser.');
+      });
     });
   }
 

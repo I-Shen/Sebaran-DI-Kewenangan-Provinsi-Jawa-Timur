@@ -498,6 +498,54 @@ input:focus, select:focus {
   gap: 8px;
 }
 
+/* PROXIMITY ACTION BUTTONS */
+.proximity-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.proximity-actions.hidden {
+  display: none;
+}
+
+.btn-action-share {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-wa {
+  background: rgba(37, 211, 102, 0.18);
+  border: 1px solid rgba(37, 211, 102, 0.45);
+  color: #25d366;
+}
+
+.btn-wa:hover {
+  background: #25d366;
+  color: #070d1e;
+}
+
+.btn-copy {
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--primary);
+}
+
+.btn-copy:hover {
+  background: var(--primary);
+  color: #070d1e;
+}
+
 /* NEAREST DI ITEM */
 .nearest-item {
   background: rgba(0, 0, 0, 0.35);
