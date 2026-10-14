@@ -88,21 +88,35 @@ WebGIS ini mengintegrasikan seluruh jaringan sungai alami di Jawa Timur yang ter
 | 5 | **WS Sampean Setail** | 949 segmen | 3.516,7 km | Sunset Orange | `#f97316` |
 | 6 | **WS Kepulauan Madura** | 2.867 segmen | 5.604,6 km | Aqua Cyan | `#00e5ff` |
 
+### 🚀 Optimasi Performa & Workflow Baru Spasial Sungai (Update):
+1. **Pemetaan Batas Wilayah Sungai (WS) Otomatis pada Awal Buka**:
+   * Sistem secara otomatis memetakan batas poligon terluar dari 6 Wilayah Sungai dengan garis batas administrasi tegas (`weight: 3.2px`, `#0f172a`) dan sentuhan *semi-transparent color wash* (`fillOpacity: 0.14`).
+   * Dilengkapi **Notasi Text Pill Semi-Transparan** di titik centroid masing-masing WS (contoh: `WS BENGAWAN SOLO`, `WS BRANTAS`) dengan *backdrop blur* sehingga informasi peta satelit, kontur jalan, dan nama kota di bawahnya tetap terbaca sempurna.
+2. **Inisialisasi Ringan (Hanya Sungai Orde 1 & 2)**:
+   * Mengatasi isu kelambatan saat awal membuka peta, sistem awal hanya memuat sungai **Orde 1** (sungai induk utama) dan **Orde 2** (anakan sungai besar) sebanyak 4.411 segmen.
+   * Orde 3 hingga 8 ditangguhkan (*deferred*) sehingga *initial load* halaman menjadi instan, ringan, dan berjalan mulus 60 FPS di perangkat *mobile* maupun *desktop*.
+3. **Deteksi & Rekomendasi Sungai Terdekat (Orde 1–8 On-Demand)**:
+   * Saat pengguna mencari koordinat, mengeklik peta, atau mengaktifkan GPS, sistem secara otomatis mengidentifikasi WS setempat dan memuat data detail sungai untuk menghitung proksimitas ke sungai terdekat dari **Orde 1 hingga 8**.
+   * Menampilkan kartu **"Rekomendasi Sungai Terdekat (Orde 1–8)"** di panel samping (*sidebar*) lengkap dengan jarak akurat (meter/km), nomor Orde, nama DAS, tombol fokus, dan *checkbox toggle* visibilitas per sungai.
+   * Dilengkapi tombol opsi **"Tampilkan Semua Orde di WS Ini"** jika pengguna ingin mengeksplorasi seluruh cabang sungai kecil hingga Orde 8 di wilayah sungai tersebut.
+
 ### Prinsip Kartografi Garis Ganda (Dual-Stroke Casing):
 * **Warna Base Inti Sungai (River Core)**: Menggunakan **Biru Tua Alami (`#1e40af`, width 2.5–3.0px)** sebagai lambang air sungai alami yang mengalir deras, membedakannya secara tegas dari saluran irigasi buatan yang berinti biru muda cerah (`#00e5ff`).
-* **Warna Pembungkus Luar (Outer Casing)**: Garis luar ganda (*dual-stroke casing*, *width* 5.6px) dengan warna tematik per Wilayah Sungai sehingga saat peta dibuka pertama kali pada skala provinsi, aliran sungai di tiap wilayah sungai langsung terlihat kontras, tegas, dan mudah diidentifikasi.
+* **Warna Pembungkus Luar (Outer Casing)**: Garis luar ganda (*dual-stroke casing*, *width* 4.8–5.6px) dengan warna tematik per Wilayah Sungai sehingga aliran sungai di tiap wilayah sungai langsung terlihat kontras, tegas, dan mudah diidentifikasi.
 * **Hierarki Visual Layering (Leaflet Custom Panes)**:
   * `Tile Basemap` (zIndex 200)
-  * `riversCasingPane` (zIndex 410) & `riversCorePane` (zIndex 412) — Sungai alami berada di bawah saluran irigasi.
-  * `diHighlightPane` (zIndex 450) — Jaringan DI (saluran, petak, bangunan) berada di atas lapisan sungai.
+  * `wsBoundsPane` (zIndex 405) — Poligon batas dan notasi text WS.
+  * `riversCasingPane` (zIndex 410) & `riversCorePane` (zIndex 412) — Sungai alami Orde 1-2.
+  * `recommendedRiversPane` (zIndex 420) — Sungai rekomendasi terdekat & garis konektor proksimitas.
+  * `diHighlightPane` (zIndex 450) — Jaringan DI (saluran, petak, bangunan).
   * `diClusterPane` (zIndex 600+) — Pin DI.
   * `radarPane` (zIndex 1000) — Radar proksimitas & target pin.
 * **Interaktivitas Sungai & Google Earth Inspector**:
-  * **Hover Tooltip**: Menampilkan nama sungai, orde sungai, dan wilayah sungai.
+  * **Hover Tooltip**: Menampilkan nama sungai, orde sungai, panjang, dan wilayah sungai.
   * **Klik Sungai**: Membuka kartu **Google Earth Inspector** dengan data teknis: *Nama Sungai*, *Wilayah Sungai*, *DAS*, *Orde Sungai*, *Panjang Sungai (km & m)*, dan *Kabupaten*.
 * **Kontrol Peta**:
-  * Tombol **Toggle Sungai (`🌊 Sungai: ON/OFF`)** di bilah atas (*top navbar*).
-  * Menu dropdown seleksi per wilayah sungai di kontrol peta melayang (*floating map controls*).
+  * Tombol **Toggle Batas WS (`Batas WS`)** dan **Toggle Sungai Utama (`Sungai Orde 1-2`)** di bilah atas (*top navbar*).
+  * Menu dropdown seleksi per wilayah sungai di kontrol peta melayang (*floating map controls*) untuk memuat detail penuh per wilayah sungai.
 
 ---
 

@@ -46,10 +46,16 @@
           </select>
         </div>
 
-        <!-- TOGGLE LAYER SUNGAI JATIM -->
-        <button id="btnToggleRivers" class="btn-river-toggle active" title="Tampilkan/Sembunyikan 6 Wilayah Sungai Jawa Timur (Dual-Stroke)">
+        <!-- TOGGLE BATAS WILAYAH SUNGAI (WS) -->
+        <button id="btnToggleWs" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Batas 6 Wilayah Sungai (Poligon & Notasi Text)">
+          <i class="fa-solid fa-draw-polygon"></i>
+          <span class="btn-text">Batas WS</span>
+        </button>
+
+        <!-- TOGGLE LAYER SUNGAI JATIM ORDE 1 & 2 -->
+        <button id="btnToggleRivers" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Sungai Utama & Percabangan Besar (Orde 1 & 2)">
           <i class="fa-solid fa-water"></i>
-          <span class="btn-text">Sungai (6 WS)</span>
+          <span class="btn-text">Sungai Orde 1-2</span>
         </button>
 
         <button id="btnToggleSidebar" class="btn-icon" title="Buka/Tutup Panel Kontrol">
@@ -282,6 +288,31 @@
             </div>
           </div>
 
+          <!-- SECTION 2.5: REKOMENDASI SUNGAI TERDEKAT (ORDE 1-8) -->
+          <div id="nearbyRiversCard" class="card glass-card hidden">
+            <div class="card-title">
+              <div class="flex-align">
+                <i class="fa-solid fa-water" style="color: #38bdf8;"></i>
+                <h3>Sungai Terdekat (Orde 1–8)</h3>
+              </div>
+              <span id="nearbyWsBadge" class="nearby-ws-badge">WS ...</span>
+            </div>
+            
+            <p class="section-desc" style="font-size: 0.76rem; color: #94a3b8; margin: 4px 0 8px 0;">
+              Terdeteksi dari titik target aktif. Klik checkbox untuk menampilkan/sembunyikan di peta:
+            </p>
+
+            <div id="nearbyRiversList" class="nearby-rivers-list">
+              <!-- Dynamically populated recommended rivers -->
+            </div>
+
+            <div class="nearby-rivers-actions">
+              <button id="btnToggleAllOrde" class="btn-compare-action" style="width: 100%; margin-top: 10px;">
+                <i class="fa-solid fa-network-wired"></i> <span id="lblToggleAllOrde">Tampilkan Semua Orde di WS Ini</span>
+              </button>
+            </div>
+          </div>
+
           <!-- SECTION 3: FILTER UPT & SEARCH DI -->
           <div class="card glass-card">
             <div class="card-title">
@@ -352,41 +383,48 @@
 
       <!-- MAP CONTROLS (FLOATING BOTTOM RIGHT: BASEMAP & SUNGAI JATIM) -->
       <div class="map-controls-group">
-        <!-- RIVER BASIN FILTER POPUP -->
+        <!-- RIVER & WS LAYER CONTROLS POPUP -->
         <div class="river-selector-wrap">
-          <button id="btnToggleRiverMenu" class="btn-map-control" title="Pilih Wilayah Sungai (Dual-Stroke)">
+          <button id="btnToggleRiverMenu" class="btn-map-control" title="Pilih Layer Wilayah Sungai & Orde">
             <i class="fa-solid fa-water" style="color: #38bdf8;"></i>
-            <span>Sungai Jatim</span>
+            <span>Layer Sungai & WS</span>
           </button>
           <div id="riverDropdown" class="river-dropdown hidden">
-            <div class="dropdown-header">6 Wilayah Sungai (Garis Ganda)</div>
-            <button class="river-opt active" data-ws="ALL">
-              <span class="river-color-dot" style="background: #1e40af; border: 2px solid #ffffff;"></span>
-              <span>Semua Wilayah Sungai (18.724 Segmen)</span>
+            <div class="dropdown-header">Layer Spasial Sungai & WS</div>
+            <button class="river-layer-toggle active" id="menuToggleWsBounds">
+              <i class="fa-solid fa-draw-polygon" style="color: #10b981;"></i>
+              <span>Batas 6 Wilayah Sungai (Poligon & Label)</span>
             </button>
+            <button class="river-layer-toggle active" id="menuToggleOrde12">
+              <i class="fa-solid fa-water" style="color: #38bdf8;"></i>
+              <span>Sungai Utama Jatim (Orde 1 & 2)</span>
+            </button>
+            
+            <div class="dropdown-divider" style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 6px 0;"></div>
+            <div class="dropdown-subheader">Muat Detail Penuh (Orde 1–8 On-Demand)</div>
             <button class="river-opt" data-ws="brantas">
               <span class="river-color-dot" style="background: #1e40af; border: 2px solid #f59e0b;"></span>
-              <span>WS Brantas (Amber Gold)</span>
+              <span>WS Brantas (Detail Penuh)</span>
             </button>
             <button class="river-opt" data-ws="bengawan_solo">
               <span class="river-color-dot" style="background: #1e40af; border: 2px solid #10b981;"></span>
-              <span>WS Bengawan Solo (Emerald)</span>
+              <span>WS Bengawan Solo (Detail Penuh)</span>
             </button>
             <button class="river-opt" data-ws="bondoyudo_baru">
               <span class="river-color-dot" style="background: #1e40af; border: 2px solid #ec4899;"></span>
-              <span>WS Bondoyudo Baru (Rose)</span>
+              <span>WS Bondoyudo Baru (Detail Penuh)</span>
             </button>
             <button class="river-opt" data-ws="welang_pekalen">
               <span class="river-color-dot" style="background: #1e40af; border: 2px solid #8b5cf6;"></span>
-              <span>WS Welang Pekalen (Violet)</span>
+              <span>WS Welang Pekalen (Detail Penuh)</span>
             </button>
             <button class="river-opt" data-ws="sampean_setail">
               <span class="river-color-dot" style="background: #1e40af; border: 2px solid #f97316;"></span>
-              <span>WS Sampean Setail (Orange)</span>
+              <span>WS Sampean Setail (Detail Penuh)</span>
             </button>
             <button class="river-opt" data-ws="madura">
               <span class="river-color-dot" style="background: #1e40af; border: 2px solid #00e5ff;"></span>
-              <span>WS Kepulauan Madura (Cyan)</span>
+              <span>WS Kepulauan Madura (Detail Penuh)</span>
             </button>
           </div>
         </div>
@@ -420,9 +458,11 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
-  <!-- Spatial Data JS wrappers (DI & Sungai) -->
+  <!-- Spatial Data JS wrappers (DI, Batas WS & Sungai) -->
   <script src="data/di_jatim.js"></script>
   <script src="data/sungai/index.js"></script>
+  <script src="data/sungai/batas_ws.js"></script>
+  <script src="data/sungai/sungai_orde1_2.js"></script>
 
   <!-- Application JS -->
   <script src="app.js"></script>
