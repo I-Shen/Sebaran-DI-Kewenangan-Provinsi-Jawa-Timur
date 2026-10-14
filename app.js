@@ -814,10 +814,20 @@ document.addEventListener('DOMContentLoaded', () => {
     activeRecommendedRivers = [];
 
     const floatingBar = document.getElementById('floatingClearSelectionBar');
-    if (floatingBar) floatingBar.classList.add('hidden');
+    if (floatingBar) {
+      floatingBar.classList.add('hidden');
+      floatingBar.style.display = 'none';
+    }
+    const floatingCoordVal = document.getElementById('floatingCoordVal');
+    if (floatingCoordVal) {
+      floatingCoordVal.textContent = '-';
+    }
 
     const btnClearTarget = document.getElementById('btnClearTargetPin');
-    if (btnClearTarget) btnClearTarget.classList.add('hidden');
+    if (btnClearTarget) {
+      btnClearTarget.classList.add('hidden');
+      btnClearTarget.style.display = 'none';
+    }
 
     const coordBadge = document.getElementById('pinpointCoordBadge');
     if (coordBadge) coordBadge.textContent = '-';
@@ -886,13 +896,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update Coordinate Badge & Reveal Clear Button in Sidebar
     document.getElementById('pinpointCoordBadge').textContent = `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
     const btnClearTarget = document.getElementById('btnClearTargetPin');
-    if (btnClearTarget) btnClearTarget.classList.remove('hidden');
+    if (btnClearTarget) {
+      btnClearTarget.classList.remove('hidden');
+      btnClearTarget.style.display = 'inline-flex';
+    }
 
     // Reveal Floating Clear Selection Bar on Map
     const floatingBar = document.getElementById('floatingClearSelectionBar');
     const floatingCoordVal = document.getElementById('floatingCoordVal');
     if (floatingBar) {
       floatingBar.classList.remove('hidden');
+      floatingBar.style.display = 'flex';
       if (floatingCoordVal) {
         floatingCoordVal.textContent = `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
       }
@@ -1171,6 +1185,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnToggleBasemap.addEventListener('click', (e) => {
     e.stopPropagation();
+    const lfd = document.getElementById('layerFilterDropdown');
+    if (lfd) lfd.classList.add('hidden');
     basemapDropdown.classList.toggle('hidden');
   });
 
@@ -1303,19 +1319,18 @@ document.addEventListener('DOMContentLoaded', () => {
   let recommendedRiversGroup;
   let onDemandFullBasinGroup;
 
+  let isDiVisible = true;
   let isWsVisible = true;
-  let isOrde1Visible = true;
+  let isRiversVisible = true;
   let activeRecommendedRivers = [];
   let recommendedLayerEntries = new Map();
   let isAllOrdeVisibleInActiveWs = false;
-
-  let selectedWsLayer = null;
-  let selectedWsMarker = null;
 
   function initRiverPanes() {
     if (!map.getPane('wsBoundsPane')) {
       const wsPane = map.createPane('wsBoundsPane');
       wsPane.style.zIndex = 405; // Di bawah sungai dan DI, di atas basemap
+      wsPane.style.pointerEvents = 'none';
     }
     if (!map.getPane('riversCasingPane')) {
       const casingPane = map.createPane('riversCasingPane');
@@ -1351,74 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderOrde1Rivers();
   }
 
-  // --- FEATURE 1: BATAS WILAYAH SUNGAI (WS) & NOTASI SELEKSI ---
-  function selectWs(p, layer) {
-    if (selectedWsLayer === layer) {
-      deselectWs();
-      return;
-    }
-
-    if (selectedWsLayer) {
-      selectedWsLayer.setStyle({
-        color: '#0f172a',
-        weight: 3.2,
-        fillOpacity: 0.14
-      });
-    }
-
-    selectedWsLayer = layer;
-    layer.setStyle({
-      color: p.casing || '#38bdf8',
-      weight: 4.2,
-      fillOpacity: 0.28
-    });
-
-    // Tampilkan label nama WS HANYA di area poligon yang sedang aktif diseleksi
-    wsLabelsGroup.clearLayers();
-    if (p.centroid && Array.isArray(p.centroid)) {
-      const labelIcon = L.divIcon({
-        className: 'ws-selected-marker',
-        html: `
-          <div class="ws-selected-pill" style="border-color: ${p.casing};">
-            <span class="ws-selected-code" style="background: ${p.casing};">${p.code || 'WS'}</span>
-            <span class="ws-selected-name">${p.name.toUpperCase()}</span>
-            <button class="ws-selected-close" onclick="window.deselectWs(event)" title="Tutup info WS"><i class="fa-solid fa-xmark"></i></button>
-          </div>
-        `,
-        iconSize: [220, 36],
-        iconAnchor: [110, 18]
-      });
-
-      selectedWsMarker = L.marker([p.centroid[1], p.centroid[0]], {
-        icon: labelIcon,
-        interactive: true,
-        pane: 'wsBoundsPane'
-      }).addTo(wsLabelsGroup);
-    }
-
-    if (layer.getBounds && layer.getBounds().isValid()) {
-      map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 12, duration: 0.8 });
-    }
-    showToast(p.name, `Wilayah: ${p.kabupaten} • ${p.total_rivers} segmen sungai (${p.total_km} km)`);
-  }
-
-  function deselectWs(e) {
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (selectedWsLayer) {
-      selectedWsLayer.setStyle({
-        color: '#0f172a',
-        weight: 3.2,
-        fillOpacity: 0.14
-      });
-      selectedWsLayer = null;
-    }
-    if (wsLabelsGroup) {
-      wsLabelsGroup.clearLayers();
-    }
-    selectedWsMarker = null;
-  }
-  window.deselectWs = deselectWs;
-
+  // --- FEATURE 1: BATAS WILAYAH SUNGAI (WS) NON-BLOCKING VISUAL LAYER ---
   function renderWsBoundaries() {
     function drawWsFeatures(fc) {
       if (!fc || !fc.features) return;
@@ -1427,6 +1375,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const wsLayer = L.geoJSON(fc, {
         pane: 'wsBoundsPane',
+        interactive: false, // Tidak memblokir klik di darat, klik langsung memetakan titik target di peta!
+        className: 'ws-boundary-path',
         style: function(feat) {
           const p = feat.properties || {};
           return {
@@ -1436,35 +1386,10 @@ document.addEventListener('DOMContentLoaded', () => {
             fillColor: p.casing || '#3b82f6',
             fillOpacity: 0.14,     // Tint warna semi-transparan agar citra satelit tetap terbaca
             lineCap: 'round',
-            lineJoin: 'round'
+            lineJoin: 'round',
+            interactive: false,
+            className: 'ws-boundary-path'
           };
-        },
-        onEachFeature: function(feat, layer) {
-          const p = feat.properties || {};
-
-          layer.on('mouseover', () => {
-            if (selectedWsLayer !== layer) {
-              layer.setStyle({ fillOpacity: 0.24, weight: 3.8 });
-            }
-          });
-          layer.on('mouseout', () => {
-            if (selectedWsLayer !== layer) {
-              layer.setStyle({ fillOpacity: 0.14, weight: 3.2 });
-            }
-          });
-
-          layer.on('click', (e) => {
-            L.DomEvent.stopPropagation(e);
-            selectWs(p, layer);
-          });
-
-          layer.bindTooltip(`
-            <div style="font-family: Inter, sans-serif; padding: 4px;">
-              <strong style="color: ${p.casing}; font-size: 0.85rem;">${p.name}</strong><br>
-              <span style="font-size: 0.72rem; color: #cbd5e1;">Cakupan: ${p.kabupaten}</span><br>
-              <small style="color: #94a3b8;">${p.total_rivers} segmen sungai • ${p.total_km} km</small>
-            </div>
-          `, { sticky: true, className: 'ge-map-tooltip' });
         }
       });
 
@@ -1990,74 +1915,151 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- TOP NAVBAR & MENU TOGGLE CONTROLS ---
-  // 1. Toggle Batas WS
+  // --- UNIFIED LAYER FILTER (DI, WS, SUNGAI) CONTROLS ---
+  const btnToggleDi = document.getElementById('btnToggleDi');
   const btnToggleWs = document.getElementById('btnToggleWs');
-  const menuToggleWsBounds = document.getElementById('menuToggleWsBounds');
-
-  function toggleWsBoundariesVisibility() {
-    isWsVisible = !isWsVisible;
-    if (isWsVisible) {
-      if (!map.hasLayer(wsBoundariesGroup)) map.addLayer(wsBoundariesGroup);
-      if (!map.hasLayer(wsLabelsGroup)) map.addLayer(wsLabelsGroup);
-      if (btnToggleWs) btnToggleWs.classList.add('active');
-      if (menuToggleWsBounds) menuToggleWsBounds.classList.add('active');
-      showToast('Batas WS Aktif', 'Poligon batas 6 Wilayah Sungai ditampilkan.');
-    } else {
-      if (map.hasLayer(wsBoundariesGroup)) map.removeLayer(wsBoundariesGroup);
-      if (map.hasLayer(wsLabelsGroup)) map.removeLayer(wsLabelsGroup);
-      if (btnToggleWs) btnToggleWs.classList.remove('active');
-      if (menuToggleWsBounds) menuToggleWsBounds.classList.remove('active');
-      showToast('Batas WS Disembunyikan', 'Poligon batas Wilayah Sungai disembunyikan.');
-    }
-  }
-
-  if (btnToggleWs) btnToggleWs.addEventListener('click', toggleWsBoundariesVisibility);
-  if (menuToggleWsBounds) menuToggleWsBounds.addEventListener('click', toggleWsBoundariesVisibility);
-
-  // 2. Toggle Sungai Utama
   const btnToggleRivers = document.getElementById('btnToggleRivers');
-  const menuToggleOrde12 = document.getElementById('menuToggleOrde12');
 
-  function toggleOrde1Visibility() {
-    isOrde1Visible = !isOrde1Visible;
-    if (isOrde1Visible) {
-      if (!map.hasLayer(orde1RiversGroup)) map.addLayer(orde1RiversGroup);
-      if (btnToggleRivers) btnToggleRivers.classList.add('active');
-      if (menuToggleOrde12) menuToggleOrde12.classList.add('active');
-      showToast('Sungai Utama Aktif', 'Alur sungai utama Jawa Timur ditampilkan.');
-    } else {
-      if (map.hasLayer(orde1RiversGroup)) map.removeLayer(orde1RiversGroup);
-      if (btnToggleRivers) btnToggleRivers.classList.remove('active');
-      if (menuToggleOrde12) menuToggleOrde12.classList.remove('active');
-      showToast('Sungai Utama Disembunyikan', 'Jaringan sungai utama sementara disembunyikan.');
+  const btnToggleLayerMenu = document.getElementById('btnToggleLayerMenu');
+  const layerFilterDropdown = document.getElementById('layerFilterDropdown');
+  const layerFilterCounter = document.getElementById('layerFilterCounter');
+
+  const chkLayerDi = document.getElementById('chkLayerDi');
+  const chkLayerWs = document.getElementById('chkLayerWs');
+  const chkLayerRivers = document.getElementById('chkLayerRivers');
+
+  const filterRowDi = document.getElementById('filterRowDi');
+  const filterRowWs = document.getElementById('filterRowWs');
+  const filterRowRivers = document.getElementById('filterRowRivers');
+
+  function updateLayerCounter() {
+    let count = 0;
+    if (isDiVisible) count++;
+    if (isWsVisible) count++;
+    if (isRiversVisible) count++;
+    if (layerFilterCounter) {
+      layerFilterCounter.textContent = `${count} Aktif`;
     }
   }
 
-  if (btnToggleRivers) btnToggleRivers.addEventListener('click', toggleOrde1Visibility);
-  if (menuToggleOrde12) menuToggleOrde12.addEventListener('click', toggleOrde1Visibility);
+  // 1. Toggle Layer DI
+  function setDiVisibility(visible) {
+    isDiVisible = visible;
+    if (markerClusterGroup) {
+      if (isDiVisible) {
+        if (!map.hasLayer(markerClusterGroup)) map.addLayer(markerClusterGroup);
+      } else {
+        if (map.hasLayer(markerClusterGroup)) map.removeLayer(markerClusterGroup);
+      }
+    }
+    if (btnToggleDi) btnToggleDi.classList.toggle('active', isDiVisible);
+    if (chkLayerDi) chkLayerDi.checked = isDiVisible;
+    if (filterRowDi) filterRowDi.classList.toggle('active', isDiVisible);
+    updateLayerCounter();
+    showToast(
+      isDiVisible ? 'Layer DI Aktif' : 'Layer DI Disembunyikan',
+      isDiVisible ? 'Sebaran 1.600+ Daerah Irigasi ditampilkan.' : 'Sebaran Daerah Irigasi disembunyikan.'
+    );
+  }
 
-  // 3. River Dropdown Menu
-  const btnToggleRiverMenu = document.getElementById('btnToggleRiverMenu');
-  const riverDropdown = document.getElementById('riverDropdown');
-  if (btnToggleRiverMenu && riverDropdown) {
-    btnToggleRiverMenu.addEventListener('click', (e) => {
-      e.stopPropagation();
-      riverDropdown.classList.toggle('hidden');
+  // 2. Toggle Layer WS
+  function setWsVisibility(visible) {
+    isWsVisible = visible;
+    if (wsBoundariesGroup) {
+      if (isWsVisible) {
+        if (!map.hasLayer(wsBoundariesGroup)) map.addLayer(wsBoundariesGroup);
+        if (wsLabelsGroup && !map.hasLayer(wsLabelsGroup)) map.addLayer(wsLabelsGroup);
+      } else {
+        if (map.hasLayer(wsBoundariesGroup)) map.removeLayer(wsBoundariesGroup);
+        if (wsLabelsGroup && map.hasLayer(wsLabelsGroup)) map.removeLayer(wsLabelsGroup);
+      }
+    }
+    if (btnToggleWs) btnToggleWs.classList.toggle('active', isWsVisible);
+    if (chkLayerWs) chkLayerWs.checked = isWsVisible;
+    if (filterRowWs) filterRowWs.classList.toggle('active', isWsVisible);
+    updateLayerCounter();
+    showToast(
+      isWsVisible ? 'Layer WS Aktif' : 'Layer WS Disembunyikan',
+      isWsVisible ? 'Poligon batas 6 Wilayah Sungai ditampilkan.' : 'Poligon batas Wilayah Sungai disembunyikan.'
+    );
+  }
+
+  // 3. Toggle Layer Sungai
+  function setRiversVisibility(visible) {
+    isRiversVisible = visible;
+    if (orde1RiversGroup) {
+      if (isRiversVisible) {
+        if (!map.hasLayer(orde1RiversGroup)) map.addLayer(orde1RiversGroup);
+      } else {
+        if (map.hasLayer(orde1RiversGroup)) map.removeLayer(orde1RiversGroup);
+      }
+    }
+    if (btnToggleRivers) btnToggleRivers.classList.toggle('active', isRiversVisible);
+    if (chkLayerRivers) chkLayerRivers.checked = isRiversVisible;
+    if (filterRowRivers) filterRowRivers.classList.toggle('active', isRiversVisible);
+    updateLayerCounter();
+    showToast(
+      isRiversVisible ? 'Layer Sungai Aktif' : 'Layer Sungai Disembunyikan',
+      isRiversVisible ? 'Jaringan alur sungai utama Jawa Timur ditampilkan.' : 'Alur sungai disembunyikan.'
+    );
+  }
+
+  // Header quick buttons
+  if (btnToggleDi) btnToggleDi.addEventListener('click', () => setDiVisibility(!isDiVisible));
+  if (btnToggleWs) btnToggleWs.addEventListener('click', () => setWsVisibility(!isWsVisible));
+  if (btnToggleRivers) btnToggleRivers.addEventListener('click', () => setRiversVisibility(!isRiversVisible));
+
+  // Dropdown checkboxes
+  if (chkLayerDi) chkLayerDi.addEventListener('change', (e) => setDiVisibility(e.target.checked));
+  if (chkLayerWs) chkLayerWs.addEventListener('change', (e) => setWsVisibility(e.target.checked));
+  if (chkLayerRivers) chkLayerRivers.addEventListener('change', (e) => setRiversVisibility(e.target.checked));
+
+  // Dropdown row clicks
+  if (filterRowDi) {
+    filterRowDi.addEventListener('click', (e) => {
+      if (e.target !== chkLayerDi && !e.target.closest('.custom-switch')) {
+        setDiVisibility(!isDiVisible);
+      }
     });
-
-    document.addEventListener('click', (e) => {
-      if (!riverDropdown.contains(e.target) && e.target !== btnToggleRiverMenu) {
-        riverDropdown.classList.add('hidden');
+  }
+  if (filterRowWs) {
+    filterRowWs.addEventListener('click', (e) => {
+      if (e.target !== chkLayerWs && !e.target.closest('.custom-switch')) {
+        setWsVisibility(!isWsVisible);
+      }
+    });
+  }
+  if (filterRowRivers) {
+    filterRowRivers.addEventListener('click', (e) => {
+      if (e.target !== chkLayerRivers && !e.target.closest('.custom-switch')) {
+        setRiversVisibility(!isRiversVisible);
       }
     });
   }
 
+  // Dropdown Menu Toggle & Outside Click
+  if (btnToggleLayerMenu && layerFilterDropdown) {
+    btnToggleLayerMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isCurrentlyHidden = layerFilterDropdown.classList.contains('hidden');
+      if (basemapDropdown) basemapDropdown.classList.add('hidden');
+      layerFilterDropdown.classList.toggle('hidden', !isCurrentlyHidden);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!layerFilterDropdown.contains(e.target) && e.target !== btnToggleLayerMenu && !btnToggleLayerMenu.contains(e.target)) {
+        layerFilterDropdown.classList.add('hidden');
+      }
+    });
+  }
+
+  // On-demand WS River Detail Buttons
   document.querySelectorAll('.river-opt').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
       const wsSlug = btn.getAttribute('data-ws');
       loadFullBasinDetail(wsSlug);
-      if (riverDropdown) riverDropdown.classList.add('hidden');
+      if (layerFilterDropdown) layerFilterDropdown.classList.add('hidden');
     });
   });
 

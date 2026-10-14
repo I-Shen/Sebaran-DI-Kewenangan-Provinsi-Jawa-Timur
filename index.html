@@ -46,16 +46,22 @@
           </select>
         </div>
 
+        <!-- TOGGLE LAYER SEBARAN DI -->
+        <button id="btnToggleDi" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Sebaran Titik Daerah Irigasi (DI)">
+          <i class="fa-solid fa-location-dot"></i>
+          <span class="btn-text">DI</span>
+        </button>
+
         <!-- TOGGLE BATAS WILAYAH SUNGAI (WS) -->
-        <button id="btnToggleWs" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Batas 6 Wilayah Sungai (Poligon & Notasi Text)">
+        <button id="btnToggleWs" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Batas 6 Wilayah Sungai (WS)">
           <i class="fa-solid fa-draw-polygon"></i>
-          <span class="btn-text">Batas WS</span>
+          <span class="btn-text">WS</span>
         </button>
 
         <!-- TOGGLE LAYER SUNGAI UTAMA JATIM -->
-        <button id="btnToggleRivers" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Jaringan Sungai Utama Jawa Timur">
+        <button id="btnToggleRivers" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Jaringan Sungai Utama">
           <i class="fa-solid fa-water"></i>
-          <span class="btn-text">Sungai Utama</span>
+          <span class="btn-text">Sungai</span>
         </button>
 
         <button id="btnToggleSidebar" class="btn-icon" title="Buka/Tutup Panel Kontrol">
@@ -400,49 +406,99 @@
 
       <!-- MAP CONTROLS (FLOATING BOTTOM RIGHT: BASEMAP & SUNGAI JATIM) -->
       <div class="map-controls-group">
-        <!-- RIVER & WS LAYER CONTROLS POPUP -->
-        <div class="river-selector-wrap">
-          <button id="btnToggleRiverMenu" class="btn-map-control" title="Pilih Layer Wilayah Sungai & Orde">
-            <i class="fa-solid fa-water" style="color: #38bdf8;"></i>
-            <span>Layer Sungai & WS</span>
+        <!-- UNIFIED LAYER FILTER (DI, WS, SUNGAI) -->
+        <div class="layer-filter-wrap">
+          <button id="btnToggleLayerMenu" class="btn-map-control" title="Filter Layer Peta (DI, WS, Sungai)">
+            <i class="fa-solid fa-layer-group" style="color: #38bdf8;"></i>
+            <span>Filter Layer</span>
           </button>
-          <div id="riverDropdown" class="river-dropdown hidden">
-            <div class="dropdown-header">Layer Spasial Sungai & WS</div>
-            <button class="river-layer-toggle active" id="menuToggleWsBounds">
-              <i class="fa-solid fa-draw-polygon" style="color: #10b981;"></i>
-              <span>Batas 6 Wilayah Sungai (Poligon & Label)</span>
-            </button>
-            <button class="river-layer-toggle active" id="menuToggleOrde12">
-              <i class="fa-solid fa-water" style="color: #38bdf8;"></i>
-              <span>Sungai Utama Jawa Timur</span>
-            </button>
-            
-            <div class="dropdown-divider" style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 6px 0;"></div>
-            <div class="dropdown-subheader">Muat Seluruh Cabang Sungai (On-Demand)</div>
-            <button class="river-opt" data-ws="brantas">
-              <span class="river-color-dot" style="background: #1e40af; border: 2px solid #f59e0b;"></span>
-              <span>WS Brantas (Detail Penuh)</span>
-            </button>
-            <button class="river-opt" data-ws="bengawan_solo">
-              <span class="river-color-dot" style="background: #1e40af; border: 2px solid #10b981;"></span>
-              <span>WS Bengawan Solo (Detail Penuh)</span>
-            </button>
-            <button class="river-opt" data-ws="bondoyudo_baru">
-              <span class="river-color-dot" style="background: #1e40af; border: 2px solid #ec4899;"></span>
-              <span>WS Bondoyudo Baru (Detail Penuh)</span>
-            </button>
-            <button class="river-opt" data-ws="welang_pekalen">
-              <span class="river-color-dot" style="background: #1e40af; border: 2px solid #8b5cf6;"></span>
-              <span>WS Welang Pekalen (Detail Penuh)</span>
-            </button>
-            <button class="river-opt" data-ws="sampean_setail">
-              <span class="river-color-dot" style="background: #1e40af; border: 2px solid #f97316;"></span>
-              <span>WS Sampean Setail (Detail Penuh)</span>
-            </button>
-            <button class="river-opt" data-ws="madura">
-              <span class="river-color-dot" style="background: #1e40af; border: 2px solid #00e5ff;"></span>
-              <span>WS Kepulauan Madura (Detail Penuh)</span>
-            </button>
+          <div id="layerFilterDropdown" class="layer-filter-dropdown hidden">
+            <div class="dropdown-header">
+              <span>Filter Layer Spasial</span>
+              <span id="layerFilterCounter" class="layer-counter-badge">3 Aktif</span>
+            </div>
+
+            <div class="layer-filter-list">
+              <!-- a. LAYER DI -->
+              <div class="layer-filter-row active" id="filterRowDi" data-layer="di">
+                <div class="layer-row-left">
+                  <span class="layer-row-icon" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">
+                    <i class="fa-solid fa-location-dot"></i>
+                  </span>
+                  <div class="layer-row-text">
+                    <span class="layer-row-title">a. Daerah Irigasi (DI)</span>
+                    <span class="layer-row-desc">1.600+ Sebaran DI Pemprov Jatim</span>
+                  </div>
+                </div>
+                <div class="layer-row-switch">
+                  <input type="checkbox" id="chkLayerDi" checked>
+                  <label for="chkLayerDi" class="custom-switch"></label>
+                </div>
+              </div>
+
+              <!-- b. LAYER WS -->
+              <div class="layer-filter-row active" id="filterRowWs" data-layer="ws">
+                <div class="layer-row-left">
+                  <span class="layer-row-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+                    <i class="fa-solid fa-draw-polygon"></i>
+                  </span>
+                  <div class="layer-row-text">
+                    <span class="layer-row-title">b. Wilayah Sungai (WS)</span>
+                    <span class="layer-row-desc">Batas 6 Wilayah Sungai</span>
+                  </div>
+                </div>
+                <div class="layer-row-switch">
+                  <input type="checkbox" id="chkLayerWs" checked>
+                  <label for="chkLayerWs" class="custom-switch"></label>
+                </div>
+              </div>
+
+              <!-- c. LAYER SUNGAI -->
+              <div class="layer-filter-row active" id="filterRowRivers" data-layer="rivers">
+                <div class="layer-row-left">
+                  <span class="layer-row-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+                    <i class="fa-solid fa-water"></i>
+                  </span>
+                  <div class="layer-row-text">
+                    <span class="layer-row-title">c. Jaringan Sungai</span>
+                    <span class="layer-row-desc">Alur Sungai Utama Jawa Timur</span>
+                  </div>
+                </div>
+                <div class="layer-row-switch">
+                  <input type="checkbox" id="chkLayerRivers" checked>
+                  <label for="chkLayerRivers" class="custom-switch"></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-subheader">Muat Cabang Sungai WS (On-Demand)</div>
+            <div class="river-opt-grid">
+              <button class="river-opt" data-ws="brantas">
+                <span class="river-color-dot" style="background: #1e40af; border: 2px solid #f59e0b;"></span>
+                <span>WS Brantas</span>
+              </button>
+              <button class="river-opt" data-ws="bengawan_solo">
+                <span class="river-color-dot" style="background: #1e40af; border: 2px solid #10b981;"></span>
+                <span>WS Bengawan Solo</span>
+              </button>
+              <button class="river-opt" data-ws="bondoyudo_baru">
+                <span class="river-color-dot" style="background: #1e40af; border: 2px solid #ec4899;"></span>
+                <span>WS Bondoyudo Baru</span>
+              </button>
+              <button class="river-opt" data-ws="welang_pekalen">
+                <span class="river-color-dot" style="background: #1e40af; border: 2px solid #8b5cf6;"></span>
+                <span>WS Welang Pekalen</span>
+              </button>
+              <button class="river-opt" data-ws="sampean_setail">
+                <span class="river-color-dot" style="background: #1e40af; border: 2px solid #f97316;"></span>
+                <span>WS Sampean Setail</span>
+              </button>
+              <button class="river-opt" data-ws="madura">
+                <span class="river-color-dot" style="background: #1e40af; border: 2px solid #00e5ff;"></span>
+                <span>WS Kepulauan Madura</span>
+              </button>
+            </div>
           </div>
         </div>
 

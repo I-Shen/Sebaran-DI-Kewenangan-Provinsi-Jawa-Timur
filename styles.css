@@ -48,6 +48,11 @@ body, html {
   color: var(--text-main);
 }
 
+/* GLOBAL UTILITIES */
+.hidden {
+  display: none !important;
+}
+
 /* APP LAYOUT */
 .app-layout {
   display: flex;
@@ -1733,6 +1738,10 @@ input:focus, select:focus {
   gap: 5px;
 }
 
+.floating-clear-bar.hidden {
+  display: none !important;
+}
+
 .floating-coord-val {
   font-family: monospace;
   font-size: 0.74rem;
@@ -1785,6 +1794,10 @@ input:focus, select:focus {
   transition: all 0.15s ease;
 }
 
+.btn-clear-target.hidden {
+  display: none !important;
+}
+
 .btn-clear-target:hover {
   background: #ef4444;
   color: #ffffff;
@@ -1817,6 +1830,13 @@ input:focus, select:focus {
 /* ==========================================================================
    WILAYAH SUNGAI (WS) BOUNDARIES & SELECTION LABELS
    ========================================================================== */
+.leaflet-pane.leaflet-wsBoundsPane-pane,
+.leaflet-pane.leaflet-wsBoundsPane-pane svg,
+.leaflet-pane.leaflet-wsBoundsPane-pane path,
+.ws-boundary-path {
+  pointer-events: none !important;
+}
+
 .ws-selected-pill {
   display: inline-flex;
   align-items: center;
@@ -2014,30 +2034,164 @@ input:focus, select:focus {
   border-color: #38bdf8;
 }
 
-.river-layer-toggle {
+/* UNIFIED LAYER FILTER (DI, WS, SUNGAI) */
+.layer-filter-wrap {
+  position: relative;
+}
+
+.layer-filter-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: rgba(11, 20, 44, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 20px rgba(56, 189, 248, 0.2);
+  padding: 10px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: slideUpFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.layer-counter-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.layer-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.layer-filter-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
+  justify-content: space-between;
   padding: 8px 10px;
-  background: transparent;
-  border: none;
-  color: #e2e8f0;
-  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  text-align: left;
-  border-radius: 6px;
-  transition: background 0.15s ease;
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.river-layer-toggle:hover {
+.layer-filter-row:hover {
   background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(56, 189, 248, 0.3);
 }
 
-.river-layer-toggle.active {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  font-weight: 600;
+.layer-filter-row.active {
+  background: rgba(56, 189, 248, 0.1);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.layer-row-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.layer-row-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.layer-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.layer-row-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-row-desc {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.layer-row-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.layer-row-switch input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.custom-switch {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  transition: .25s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.custom-switch:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #cbd5e1;
+  border-radius: 50%;
+  transition: .25s ease;
+}
+
+.layer-row-switch input:checked + .custom-switch {
+  background-color: #0284c7;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.layer-row-switch input:checked + .custom-switch:before {
+  transform: translateX(16px);
+  background-color: #ffffff;
+}
+
+.river-opt-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
 }
 
 .dropdown-subheader {
