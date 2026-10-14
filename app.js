@@ -334,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Attributes list
     if (isRiver) {
       document.getElementById('geAttrIdDi').textContent = p.ws_name || p.WS || '-';
-      document.getElementById('geAttrKAset').textContent = p.Orde ? `Orde ${p.Orde}` : '-';
+      document.getElementById('geAttrKAset').textContent = p.Tipe_Sungai || 'Sungai Utama';
       document.getElementById('geAttrNama').textContent = p.Sungai || '-';
       document.getElementById('geAttrNomenklatur').textContent = p.Induk ? `Induk: ${p.Induk}` : (p.Nomenklatr || '-');
       document.getElementById('geAttrNorec').textContent = p.Kabupaten || '-';
@@ -799,6 +799,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 8. PINPOINT & PROXIMITY SIGNAL (RADAR CORE FEATURE)
+  function clearTargetPinpoint() {
+    if (activePinpointMarker) {
+      map.removeLayer(activePinpointMarker);
+      activePinpointMarker = null;
+    }
+    radarPolylines.forEach(p => map.removeLayer(p));
+    radarPolylines = [];
+
+    if (recommendedRiversGroup) {
+      recommendedRiversGroup.clearLayers();
+    }
+    recommendedLayerEntries.clear();
+    activeRecommendedRivers = [];
+
+    const floatingBar = document.getElementById('floatingClearSelectionBar');
+    if (floatingBar) floatingBar.classList.add('hidden');
+
+    const btnClearTarget = document.getElementById('btnClearTargetPin');
+    if (btnClearTarget) btnClearTarget.classList.add('hidden');
+
+    const coordBadge = document.getElementById('pinpointCoordBadge');
+    if (coordBadge) coordBadge.textContent = '-';
+
+    const nearbyCard = document.getElementById('nearbyRiversCard');
+    if (nearbyCard) nearbyCard.classList.add('hidden');
+
+    const listContainer = document.getElementById('proximityList');
+    const emptyContainer = document.getElementById('proximityEmpty');
+    const controlsContainer = document.getElementById('proximityControls');
+
+    if (listContainer) {
+      listContainer.innerHTML = '';
+      listContainer.classList.add('hidden');
+    }
+    if (controlsContainer) controlsContainer.classList.add('hidden');
+    if (emptyContainer) emptyContainer.style.display = 'block';
+
+    clearAllHighlightedDis();
+    showToast('Pilihan Dibatalkan', 'Titik target dan analisis proksimitas telah dibersihkan.');
+  }
+  window.clearTargetPinpoint = clearTargetPinpoint;
+
   function setPinpointLocation(lat, lon, sourceLabel = 'Titik Lokasi') {
     // Clean previous pinpoint and polylines
     if (activePinpointMarker) {
@@ -827,16 +869,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const dmsLon = formatDdToDms(lon, 'lon');
 
     activePinpointMarker.bindPopup(`
-      <div style="padding: 10px; font-family: Inter, sans-serif;">
-        <span style="background: rgba(245, 158, 11, 0.25); color: #fbbf24; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">${sourceLabel}</span>
-        <h4 style="margin: 6px 0 4px 0; color: #ffffff; font-size: 0.9rem;">Titik Target Aktif</h4>
+      <div style="padding: 10px; font-family: Inter, sans-serif; min-width: 200px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="background: rgba(245, 158, 11, 0.25); color: #fbbf24; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">${sourceLabel}</span>
+          <span style="font-size: 0.68rem; color: #94a3b8;"><i class="fa-solid fa-crosshairs"></i> Target</span>
+        </div>
+        <h4 style="margin: 4px 0; color: #ffffff; font-size: 0.9rem;">Titik Target Aktif</h4>
         <p style="font-size: 0.74rem; color: #94a3b8; margin: 0;">${lat.toFixed(6)}°, ${lon.toFixed(6)}°</p>
-        <p style="font-size: 0.7rem; color: #38bdf8; font-family: monospace; margin: 2px 0 0 0;">${dmsLat}, ${dmsLon}</p>
+        <p style="font-size: 0.7rem; color: #38bdf8; font-family: monospace; margin: 2px 0 6px 0;">${dmsLat}, ${dmsLon}</p>
+        <button onclick="window.clearTargetPinpoint()" class="btn-popup popup-btn-clear" style="margin-top: 6px; width: 100%;">
+          <i class="fa-solid fa-xmark"></i> Batal Pilihan
+        </button>
       </div>
     `).openPopup();
 
-    // Update Coordinate Badge
+    // Update Coordinate Badge & Reveal Clear Button in Sidebar
     document.getElementById('pinpointCoordBadge').textContent = `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+    const btnClearTarget = document.getElementById('btnClearTargetPin');
+    if (btnClearTarget) btnClearTarget.classList.remove('hidden');
+
+    // Reveal Floating Clear Selection Bar on Map
+    const floatingBar = document.getElementById('floatingClearSelectionBar');
+    const floatingCoordVal = document.getElementById('floatingCoordVal');
+    if (floatingBar) {
+      floatingBar.classList.remove('hidden');
+      if (floatingCoordVal) {
+        floatingCoordVal.textContent = `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+      }
+    }
 
     // Compute proximity to all DIs
     const proximityData = allDiData.map(di => {
@@ -1146,7 +1206,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btnResetView').addEventListener('click', () => {
     clearAllHighlightedDis();
+    clearTargetPinpoint();
+    if (typeof window.deselectWs === 'function') window.deselectWs();
     map.fitBounds(EAST_JAVA_BOUNDS, { padding: [20, 20], duration: 1.0 });
+  });
+
+  // CLEAR SELECTION LISTENERS (UI / UX KEMUDAHAN MEMBATALKAN TITIK TARGET)
+  const btnFloatingClear = document.getElementById('btnFloatingClearSelection');
+  if (btnFloatingClear) {
+    btnFloatingClear.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearTargetPinpoint();
+    });
+  }
+
+  const btnClearTargetPin = document.getElementById('btnClearTargetPin');
+  if (btnClearTargetPin) {
+    btnClearTargetPin.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearTargetPinpoint();
+    });
+  }
+
+  // Keyboard Shortcut: ESC untuk membatalkan pilihan secara instan
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (activePinpointMarker) {
+        clearTargetPinpoint();
+      } else if (typeof window.deselectWs === 'function') {
+        window.deselectWs();
+      }
+    }
   });
 
   // 14. WILAYAH SUNGAI (WS) & JARINGAN SUNGAI (ORDE 1-8) ENGINE
@@ -1209,15 +1299,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let wsBoundariesGroup;
   let wsLabelsGroup;
-  let orde12RiversGroup;
+  let orde1RiversGroup;
   let recommendedRiversGroup;
   let onDemandFullBasinGroup;
 
   let isWsVisible = true;
-  let isOrde12Visible = true;
+  let isOrde1Visible = true;
   let activeRecommendedRivers = [];
   let recommendedLayerEntries = new Map();
   let isAllOrdeVisibleInActiveWs = false;
+
+  let selectedWsLayer = null;
+  let selectedWsMarker = null;
 
   function initRiverPanes() {
     if (!map.getPane('wsBoundsPane')) {
@@ -1247,18 +1340,85 @@ document.addEventListener('DOMContentLoaded', () => {
 
     wsBoundariesGroup = L.featureGroup().addTo(map);
     wsLabelsGroup = L.featureGroup().addTo(map);
-    orde12RiversGroup = L.featureGroup().addTo(map);
+    orde1RiversGroup = L.featureGroup().addTo(map);
     recommendedRiversGroup = L.featureGroup().addTo(map);
     onDemandFullBasinGroup = L.featureGroup().addTo(map);
 
-    // 1. Render Batas 6 Wilayah Sungai (Poligon & Label Notasi Semi-Transparan)
+    // 1. Render Batas 6 Wilayah Sungai (Label nama HANYA muncul saat poligon WS diseleksi)
     renderWsBoundaries();
 
-    // 2. Render Jaringan Sungai Ringan Awal (HANYA Orde 1 & 2)
-    renderOrde12Rivers();
+    // 2. Render Jaringan Sungai Ringan Awal (HANYA Sungai Utama Orde 1)
+    renderOrde1Rivers();
   }
 
-  // --- FEATURE 1: BATAS WILAYAH SUNGAI (WS) & NOTASI TEXT ---
+  // --- FEATURE 1: BATAS WILAYAH SUNGAI (WS) & NOTASI SELEKSI ---
+  function selectWs(p, layer) {
+    if (selectedWsLayer === layer) {
+      deselectWs();
+      return;
+    }
+
+    if (selectedWsLayer) {
+      selectedWsLayer.setStyle({
+        color: '#0f172a',
+        weight: 3.2,
+        fillOpacity: 0.14
+      });
+    }
+
+    selectedWsLayer = layer;
+    layer.setStyle({
+      color: p.casing || '#38bdf8',
+      weight: 4.2,
+      fillOpacity: 0.28
+    });
+
+    // Tampilkan label nama WS HANYA di area poligon yang sedang aktif diseleksi
+    wsLabelsGroup.clearLayers();
+    if (p.centroid && Array.isArray(p.centroid)) {
+      const labelIcon = L.divIcon({
+        className: 'ws-selected-marker',
+        html: `
+          <div class="ws-selected-pill" style="border-color: ${p.casing};">
+            <span class="ws-selected-code" style="background: ${p.casing};">${p.code || 'WS'}</span>
+            <span class="ws-selected-name">${p.name.toUpperCase()}</span>
+            <button class="ws-selected-close" onclick="window.deselectWs(event)" title="Tutup info WS"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `,
+        iconSize: [220, 36],
+        iconAnchor: [110, 18]
+      });
+
+      selectedWsMarker = L.marker([p.centroid[1], p.centroid[0]], {
+        icon: labelIcon,
+        interactive: true,
+        pane: 'wsBoundsPane'
+      }).addTo(wsLabelsGroup);
+    }
+
+    if (layer.getBounds && layer.getBounds().isValid()) {
+      map.fitBounds(layer.getBounds(), { padding: [40, 40], maxZoom: 12, duration: 0.8 });
+    }
+    showToast(p.name, `Wilayah: ${p.kabupaten} • ${p.total_rivers} segmen sungai (${p.total_km} km)`);
+  }
+
+  function deselectWs(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (selectedWsLayer) {
+      selectedWsLayer.setStyle({
+        color: '#0f172a',
+        weight: 3.2,
+        fillOpacity: 0.14
+      });
+      selectedWsLayer = null;
+    }
+    if (wsLabelsGroup) {
+      wsLabelsGroup.clearLayers();
+    }
+    selectedWsMarker = null;
+  }
+  window.deselectWs = deselectWs;
+
   function renderWsBoundaries() {
     function drawWsFeatures(fc) {
       if (!fc || !fc.features) return;
@@ -1283,18 +1443,19 @@ document.addEventListener('DOMContentLoaded', () => {
           const p = feat.properties || {};
 
           layer.on('mouseover', () => {
-            layer.setStyle({ fillOpacity: 0.24, weight: 3.8 });
+            if (selectedWsLayer !== layer) {
+              layer.setStyle({ fillOpacity: 0.24, weight: 3.8 });
+            }
           });
           layer.on('mouseout', () => {
-            layer.setStyle({ fillOpacity: 0.14, weight: 3.2 });
+            if (selectedWsLayer !== layer) {
+              layer.setStyle({ fillOpacity: 0.14, weight: 3.2 });
+            }
           });
 
           layer.on('click', (e) => {
             L.DomEvent.stopPropagation(e);
-            if (layer.getBounds && layer.getBounds().isValid()) {
-              map.fitBounds(layer.getBounds(), { padding: [40, 40], duration: 0.8 });
-            }
-            showToast(p.name, `Wilayah: ${p.kabupaten} • ${p.total_rivers} segmen sungai (${p.total_km} km)`);
+            selectWs(p, layer);
           });
 
           layer.bindTooltip(`
@@ -1304,28 +1465,6 @@ document.addEventListener('DOMContentLoaded', () => {
               <small style="color: #94a3b8;">${p.total_rivers} segmen sungai • ${p.total_km} km</small>
             </div>
           `, { sticky: true, className: 'ge-map-tooltip' });
-
-          // Notasi Text Semi-Transparan di Centroid Poligon WS
-          if (p.centroid && Array.isArray(p.centroid)) {
-            const labelIcon = L.divIcon({
-              className: 'ws-centroid-label',
-              html: `
-                <div class="ws-label-pill" style="border-color: ${p.casing};">
-                  <span class="ws-label-code" style="background: ${p.casing};">${p.code || 'WS'}</span>
-                  <span class="ws-label-title">${p.name.toUpperCase()}</span>
-                </div>
-              `,
-              iconSize: [160, 32],
-              iconAnchor: [80, 16]
-            });
-
-            const marker = L.marker([p.centroid[1], p.centroid[0]], {
-              icon: labelIcon,
-              interactive: false,
-              pane: 'wsBoundsPane'
-            });
-            wsLabelsGroup.addLayer(marker);
-          }
         }
       });
 
@@ -1345,21 +1484,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- FEATURE 2: SUNGAI ORDE 1 & 2 SAJA PADA AWAL HALAMAN ---
-  function renderOrde12Rivers() {
-    function drawOrde12(fc) {
+  // --- FEATURE 2: SUNGAI UTAMA (ORDE 1 SAJA) PADA AWAL HALAMAN ---
+  function renderOrde1Rivers() {
+    function drawOrde1(fc) {
       if (!fc || !fc.features) return;
-      orde12RiversGroup.clearLayers();
+      orde1RiversGroup.clearLayers();
 
       // 1. Casing Layer (Dual-Stroke)
       const casingLayer = L.geoJSON(fc, {
         pane: 'riversCasingPane',
         style: function(feat) {
           const p = feat.properties || {};
-          const orde = p.Orde || 2;
           return {
             color: p.casing_color || '#38bdf8',
-            weight: orde === 1 ? 4.8 : 3.6,
+            weight: 4.2,
             opacity: 0.92,
             lineCap: 'round',
             lineJoin: 'round',
@@ -1367,17 +1505,16 @@ document.addEventListener('DOMContentLoaded', () => {
           };
         }
       });
-      orde12RiversGroup.addLayer(casingLayer);
+      orde1RiversGroup.addLayer(casingLayer);
 
       // 2. Core Layer (Deep River Blue)
       const coreLayer = L.geoJSON(fc, {
         pane: 'riversCorePane',
         style: function(feat) {
           const p = feat.properties || {};
-          const orde = p.Orde || 2;
           return {
             color: p.core_color || '#1e40af',
-            weight: orde === 1 ? 2.8 : 2.0,
+            weight: 2.2,
             opacity: 1.0,
             lineCap: 'round',
             lineJoin: 'round'
@@ -1387,32 +1524,32 @@ document.addEventListener('DOMContentLoaded', () => {
           setupRiverFeatureInteractions(feat, layer);
         }
       });
-      orde12RiversGroup.addLayer(coreLayer);
+      orde1RiversGroup.addLayer(coreLayer);
     }
 
-    if (window.RIVER_ORDE1_2_DATA && window.RIVER_ORDE1_2_DATA.features) {
-      drawOrde12(window.RIVER_ORDE1_2_DATA);
+    if (window.RIVER_ORDE1_DATA && window.RIVER_ORDE1_DATA.features) {
+      drawOrde1(window.RIVER_ORDE1_DATA);
     } else {
-      fetch('data/sungai/sungai_orde1_2.json')
+      fetch('data/sungai/sungai_orde1.json')
         .then(res => res.json())
         .then(data => {
-          window.RIVER_ORDE1_2_DATA = data;
-          drawOrde12(data);
+          window.RIVER_ORDE1_DATA = data;
+          drawOrde1(data);
         })
-        .catch(err => console.warn('Gagal memuat sungai orde 1-2:', err));
+        .catch(err => console.warn('Gagal memuat sungai utama orde 1:', err));
     }
   }
 
   function setupRiverFeatureInteractions(feat, layer) {
     const p = feat.properties || {};
-    const title = p.Sungai ? `Sungai ${p.Sungai}` : 'Alur Sungai Jatim';
+    const title = p.Sungai ? `Sungai ${p.Sungai}` : 'Alur Sungai Utama';
     const pKm = p.Panjang_km ? `${p.Panjang_km} km` : '';
 
     layer.bindTooltip(`
       <div style="font-family: Inter, sans-serif;">
         <span style="display: inline-block; background: ${p.casing_color || '#38bdf8'}; color: #070d1e; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 3px; margin-bottom: 2px;">${p.ws_name || p.WS || 'Jawa Timur'}</span><br>
         <strong>${title}</strong><br>
-        <small style="color: #94a3b8;">DAS ${p.DAS || '-'} • Orde ${p.Orde || '-'} ${pKm ? '• ' + pKm : ''}</small>
+        <small style="color: #94a3b8;">DAS ${p.DAS || '-'} ${pKm ? '• Panjang: ' + pKm : ''}</small>
       </div>
     `, { sticky: true, className: 'ge-map-tooltip' });
 
@@ -1529,7 +1666,7 @@ document.addEventListener('DOMContentLoaded', () => {
       listEl.innerHTML = `
         <div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 0.78rem;">
           <i class="fa-solid fa-spinner fa-spin" style="margin-right: 6px; color: #38bdf8;"></i>
-          Menganalisis jaringan sungai (Orde 1–8) di ${wsInfo.name}...
+          Menganalisis jaringan sungai terdekat di ${wsInfo.name}...
         </div>
       `;
     }
@@ -1605,7 +1742,6 @@ document.addEventListener('DOMContentLoaded', () => {
     listEl.innerHTML = rivers.map((item) => {
       const p = item.properties;
       const name = p.Sungai ? `Sungai ${p.Sungai}` : 'Alur Sungai Terdekat';
-      const orde = p.Orde || 3;
       const distStr = item.distanceM < 1000 ? `${item.distanceM} m` : `${item.distanceKm.toFixed(2)} km`;
       const pKm = p.Panjang_km ? `${p.Panjang_km} km` : '-';
 
@@ -1613,12 +1749,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="nearby-river-item active" id="riverItem_${item.id}" data-river-id="${item.id}">
           <div class="river-item-info">
             <div class="river-item-title-row">
-              <span class="river-badge-orde orde-${orde}">Orde ${orde}</span>
-              <span class="river-item-name" title="${name}">${name}</span>
+              <span class="river-item-name" title="${name}"><i class="fa-solid fa-water" style="color: #38bdf8; margin-right: 5px;"></i>${name}</span>
             </div>
             <div class="river-item-meta">
               <span class="river-dist-badge"><i class="fa-solid fa-ruler"></i> ${distStr}</span>
-              <span><i class="fa-solid fa-water"></i> DAS ${p.DAS || '-'}</span>
+              <span><i class="fa-solid fa-diagram-project"></i> DAS ${p.DAS || '-'}</span>
               <span><i class="fa-solid fa-route"></i> ${pKm}</span>
             </div>
           </div>
@@ -1798,14 +1933,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (isAllOrdeVisibleInActiveWs) {
         loadFullBasinDetail(wsSlug);
-        if (lblToggleAllOrde) lblToggleAllOrde.textContent = `Sembunyikan Orde 3–8 (${wsName})`;
+        if (lblToggleAllOrde) lblToggleAllOrde.textContent = `Sembunyikan Cabang Sungai (${wsName})`;
         btnToggleAllOrde.classList.add('active');
-        showToast(`Memuat ${wsName}`, 'Menampilkan seluruh jaringan sungai orde 1 hingga 8.');
+        showToast(`Memuat ${wsName}`, 'Menampilkan seluruh jaringan cabang sungai.');
       } else {
         onDemandFullBasinGroup.clearLayers();
-        if (lblToggleAllOrde) lblToggleAllOrde.textContent = 'Tampilkan Semua Orde di WS Ini';
+        if (lblToggleAllOrde) lblToggleAllOrde.textContent = 'Tampilkan Seluruh Cabang Sungai';
         btnToggleAllOrde.classList.remove('active');
-        showToast('Tampilan Ringan Aktif', 'Kembali ke tampilan sungai utama Orde 1 & 2.');
+        showToast('Tampilan Ringan Aktif', 'Kembali ke tampilan alur sungai utama.');
       }
     });
   }
@@ -1867,7 +2002,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!map.hasLayer(wsLabelsGroup)) map.addLayer(wsLabelsGroup);
       if (btnToggleWs) btnToggleWs.classList.add('active');
       if (menuToggleWsBounds) menuToggleWsBounds.classList.add('active');
-      showToast('Batas WS Aktif', 'Poligon batas 6 Wilayah Sungai dan label notasi ditampilkan.');
+      showToast('Batas WS Aktif', 'Poligon batas 6 Wilayah Sungai ditampilkan.');
     } else {
       if (map.hasLayer(wsBoundariesGroup)) map.removeLayer(wsBoundariesGroup);
       if (map.hasLayer(wsLabelsGroup)) map.removeLayer(wsLabelsGroup);
@@ -1880,27 +2015,27 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnToggleWs) btnToggleWs.addEventListener('click', toggleWsBoundariesVisibility);
   if (menuToggleWsBounds) menuToggleWsBounds.addEventListener('click', toggleWsBoundariesVisibility);
 
-  // 2. Toggle Sungai Orde 1 & 2
+  // 2. Toggle Sungai Utama
   const btnToggleRivers = document.getElementById('btnToggleRivers');
   const menuToggleOrde12 = document.getElementById('menuToggleOrde12');
 
-  function toggleOrde12Visibility() {
-    isOrde12Visible = !isOrde12Visible;
-    if (isOrde12Visible) {
-      if (!map.hasLayer(orde12RiversGroup)) map.addLayer(orde12RiversGroup);
+  function toggleOrde1Visibility() {
+    isOrde1Visible = !isOrde1Visible;
+    if (isOrde1Visible) {
+      if (!map.hasLayer(orde1RiversGroup)) map.addLayer(orde1RiversGroup);
       if (btnToggleRivers) btnToggleRivers.classList.add('active');
       if (menuToggleOrde12) menuToggleOrde12.classList.add('active');
-      showToast('Sungai Orde 1-2 Aktif', 'Alur sungai utama dan percabangan besar ditampilkan.');
+      showToast('Sungai Utama Aktif', 'Alur sungai utama Jawa Timur ditampilkan.');
     } else {
-      if (map.hasLayer(orde12RiversGroup)) map.removeLayer(orde12RiversGroup);
+      if (map.hasLayer(orde1RiversGroup)) map.removeLayer(orde1RiversGroup);
       if (btnToggleRivers) btnToggleRivers.classList.remove('active');
       if (menuToggleOrde12) menuToggleOrde12.classList.remove('active');
-      showToast('Sungai Orde 1-2 Disembunyikan', 'Jaringan sungai utama sementara disembunyikan.');
+      showToast('Sungai Utama Disembunyikan', 'Jaringan sungai utama sementara disembunyikan.');
     }
   }
 
-  if (btnToggleRivers) btnToggleRivers.addEventListener('click', toggleOrde12Visibility);
-  if (menuToggleOrde12) menuToggleOrde12.addEventListener('click', toggleOrde12Visibility);
+  if (btnToggleRivers) btnToggleRivers.addEventListener('click', toggleOrde1Visibility);
+  if (menuToggleOrde12) menuToggleOrde12.addEventListener('click', toggleOrde1Visibility);
 
   // 3. River Dropdown Menu
   const btnToggleRiverMenu = document.getElementById('btnToggleRiverMenu');

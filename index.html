@@ -52,10 +52,10 @@
           <span class="btn-text">Batas WS</span>
         </button>
 
-        <!-- TOGGLE LAYER SUNGAI JATIM ORDE 1 & 2 -->
-        <button id="btnToggleRivers" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Sungai Utama & Percabangan Besar (Orde 1 & 2)">
+        <!-- TOGGLE LAYER SUNGAI UTAMA JATIM -->
+        <button id="btnToggleRivers" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Jaringan Sungai Utama Jawa Timur">
           <i class="fa-solid fa-water"></i>
-          <span class="btn-text">Sungai Orde 1-2</span>
+          <span class="btn-text">Sungai Utama</span>
         </button>
 
         <button id="btnToggleSidebar" class="btn-icon" title="Buka/Tutup Panel Kontrol">
@@ -76,6 +76,18 @@
     <main class="main-content">
       <!-- LEAFLET MAP CONTAINER -->
       <div id="map"></div>
+
+      <!-- FLOATING CLEAR SELECTION BAR (KEMUDAHAN MEMBATALKAN TITIK PILIHAN) -->
+      <div id="floatingClearSelectionBar" class="floating-clear-bar hidden">
+        <div class="clear-bar-content">
+          <span class="clear-bar-pulse"></span>
+          <span class="clear-bar-text"><i class="fa-solid fa-crosshairs"></i> Titik Target:</span>
+          <span id="floatingCoordVal" class="floating-coord-val">-</span>
+        </div>
+        <button id="btnFloatingClearSelection" class="btn-clear-selection-pill" title="Batalkan & Hapus Titik Pilihan (Tekan ESC)">
+          <i class="fa-solid fa-xmark"></i> Batal Pilihan
+        </button>
+      </div>
 
       <!-- GOOGLE EARTH INSPECTOR CARD (PERSIS GAMBAR 3) -->
       <div id="googleEarthInspector" class="ge-inspector-card hidden">
@@ -252,7 +264,12 @@
                 <span class="radar-dot"></span>
                 <h3>Sinyal 5 DI Terdekat</h3>
               </div>
-              <span id="pinpointCoordBadge" class="coord-badge">-</span>
+              <div class="pinpoint-badge-wrap">
+                <span id="pinpointCoordBadge" class="coord-badge">-</span>
+                <button id="btnClearTargetPin" class="btn-clear-target hidden" title="Batalkan dan hapus titik pilihan (Esc)">
+                  <i class="fa-solid fa-xmark"></i> Batal
+                </button>
+              </div>
             </div>
 
             <div id="proximityEmpty" class="proximity-empty">
@@ -288,18 +305,18 @@
             </div>
           </div>
 
-          <!-- SECTION 2.5: REKOMENDASI SUNGAI TERDEKAT (ORDE 1-8) -->
+          <!-- SECTION 2.5: REKOMENDASI SUNGAI TERDEKAT -->
           <div id="nearbyRiversCard" class="card glass-card hidden">
             <div class="card-title">
               <div class="flex-align">
                 <i class="fa-solid fa-water" style="color: #38bdf8;"></i>
-                <h3>Sungai Terdekat (Orde 1–8)</h3>
+                <h3>Rekomendasi Sungai Terdekat</h3>
               </div>
               <span id="nearbyWsBadge" class="nearby-ws-badge">WS ...</span>
             </div>
             
             <p class="section-desc" style="font-size: 0.76rem; color: #94a3b8; margin: 4px 0 8px 0;">
-              Terdeteksi dari titik target aktif. Klik checkbox untuk menampilkan/sembunyikan di peta:
+              Alur sungai terdekat dari titik target. Klik baris atau tombol untuk interaksi:
             </p>
 
             <div id="nearbyRiversList" class="nearby-rivers-list">
@@ -308,7 +325,7 @@
 
             <div class="nearby-rivers-actions">
               <button id="btnToggleAllOrde" class="btn-compare-action" style="width: 100%; margin-top: 10px;">
-                <i class="fa-solid fa-network-wired"></i> <span id="lblToggleAllOrde">Tampilkan Semua Orde di WS Ini</span>
+                <i class="fa-solid fa-network-wired"></i> <span id="lblToggleAllOrde">Tampilkan Seluruh Aliran Sungai di WS Ini</span>
               </button>
             </div>
           </div>
@@ -397,11 +414,11 @@
             </button>
             <button class="river-layer-toggle active" id="menuToggleOrde12">
               <i class="fa-solid fa-water" style="color: #38bdf8;"></i>
-              <span>Sungai Utama Jatim (Orde 1 & 2)</span>
+              <span>Sungai Utama Jawa Timur</span>
             </button>
             
             <div class="dropdown-divider" style="height: 1px; background: rgba(255, 255, 255, 0.1); margin: 6px 0;"></div>
-            <div class="dropdown-subheader">Muat Detail Penuh (Orde 1–8 On-Demand)</div>
+            <div class="dropdown-subheader">Muat Seluruh Cabang Sungai (On-Demand)</div>
             <button class="river-opt" data-ws="brantas">
               <span class="river-color-dot" style="background: #1e40af; border: 2px solid #f59e0b;"></span>
               <span>WS Brantas (Detail Penuh)</span>
@@ -462,7 +479,7 @@
   <script src="data/di_jatim.js"></script>
   <script src="data/sungai/index.js"></script>
   <script src="data/sungai/batas_ws.js"></script>
-  <script src="data/sungai/sungai_orde1_2.js"></script>
+  <script src="data/sungai/sungai_orde1.js"></script>
 
   <!-- Application JS -->
   <script src="app.js"></script>
