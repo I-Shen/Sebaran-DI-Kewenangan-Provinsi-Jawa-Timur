@@ -64,6 +64,13 @@
           <span class="btn-text">Sungai</span>
         </button>
 
+        <!-- TOGGLE LAYER ASET TANAH (SEMPADAN & PERSIL PEMERINTAH) -->
+        <button id="btnToggleAsetTanah" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Layer Aset Tanah & Sempadan (1.800 Poligon)">
+          <i class="fa-solid fa-vector-square"></i>
+          <span class="btn-text">Aset Tanah</span>
+          <span id="badgeAsetTanahNav" class="badge-mini-counter">1.8k</span>
+        </button>
+
         <button id="btnToggleSidebar" class="btn-icon" title="Buka/Tutup Panel Kontrol">
           <i class="fa-solid fa-sliders"></i>
           <span class="btn-text">Panel Kontrol</span>
@@ -469,6 +476,51 @@
                   <label for="chkLayerRivers" class="custom-switch"></label>
                 </div>
               </div>
+
+              <!-- d. LAYER ASET TANAH & SEMPADAN -->
+              <div class="layer-filter-row active" id="filterRowAsetTanah" data-layer="aset_tanah">
+                <div class="layer-row-left">
+                  <span class="layer-row-icon" style="background: rgba(249, 115, 22, 0.15); color: #f97316;">
+                    <i class="fa-solid fa-vector-square"></i>
+                  </span>
+                  <div class="layer-row-text">
+                    <span class="layer-row-title">d. Aset Tanah & Sempadan</span>
+                    <span class="layer-row-desc">1.800 Poligon • 18 Kategori</span>
+                  </div>
+                </div>
+                <div class="layer-row-switch">
+                  <input type="checkbox" id="chkLayerAsetTanah" checked>
+                  <label for="chkLayerAsetTanah" class="custom-switch"></label>
+                </div>
+              </div>
+
+              <!-- KATEGORI SELECTOR UNTUK STRESS TEST ASET TANAH -->
+              <div class="aset-category-filter-wrap" id="asetCategoryFilterWrap">
+                <label for="selAsetCategory" class="aset-filter-label">
+                  <i class="fa-solid fa-filter" style="color: #f97316;"></i> Filter Kategori Aset:
+                </label>
+                <select id="selAsetCategory" class="aset-category-select">
+                  <option value="ALL">Semua 18 Kategori (1.800 Poligon)</option>
+                  <option value="SUNGAI">SUNGAI (100)</option>
+                  <option value="BEKAS SUNGAI">BEKAS SUNGAI (100)</option>
+                  <option value="BENDUNGAN">BENDUNGAN (100)</option>
+                  <option value="BENDUNG">BENDUNG (100)</option>
+                  <option value="EMBUNG">EMBUNG (100)</option>
+                  <option value="BEKAS EMBUNG">BEKAS EMBUNG (100)</option>
+                  <option value="WADUK">WADUK (100)</option>
+                  <option value="BEKAS WADUK">BEKAS WADUK (100)</option>
+                  <option value="SALURAN PRIMER">SALURAN PRIMER (100)</option>
+                  <option value="BEKAS SALURAN PRIMER">BEKAS SALURAN PRIMER (100)</option>
+                  <option value="SALURAN SEKUNDER">SALURAN SEKUNDER (100)</option>
+                  <option value="BEKAS SALURAN SEKUNDER">BEKAS SALURAN SEKUNDER (100)</option>
+                  <option value="SALURAN PEMBUANG/AVFOUR">SALURAN PEMBUANG/AVFOUR (100)</option>
+                  <option value="BEKAS SALURAN PEMBUANG/AVFOUR">BEKAS SALURAN PEMBUANG/AVFOUR (100)</option>
+                  <option value="SALURAN TERSIER/KUARTER">SALURAN TERSIER/KUARTER (100)</option>
+                  <option value="BEKAS SALURAN TERSIER/KUARTER">BEKAS SALURAN TERSIER/KUARTER (100)</option>
+                  <option value="NON JARINGAN IRIGASI/SUNGAI">NON JARINGAN IRIGASI/SUNGAI (100)</option>
+                  <option value="MATA AIR">MATA AIR (100)</option>
+                </select>
+              </div>
             </div>
 
             <div class="dropdown-divider"></div>
@@ -531,11 +583,12 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
-  <!-- Spatial Data JS wrappers (DI, Batas WS & Sungai) -->
+  <!-- Spatial Data JS wrappers (DI, Batas WS & Sungai, Aset Tanah) -->
   <script src="data/di_jatim.js"></script>
   <script src="data/sungai/index.js"></script>
   <script src="data/sungai/batas_ws.js"></script>
   <script src="data/sungai/sungai_orde1.js"></script>
+  <script src="data/aset_tanah.js"></script>
 
   <!-- Application JS -->
   <script src="app.js"></script>

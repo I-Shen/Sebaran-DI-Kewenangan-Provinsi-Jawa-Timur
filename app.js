@@ -107,6 +107,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inisialisasi Custom Panes, Batas WS (Poligon & Notasi) & Sungai Orde 1-2
     initWsAndRivers();
+    // Inisialisasi Layer Aset Tanah & Sempadan (Stress Test 1.800 Poligon)
+    initAsetTanah();
   }
 
   // GOOGLE EARTH ICON CONFIGURATION WITH RANK COLOR ANCHOR RING
@@ -270,12 +272,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  // SHOW GOOGLE EARTH INSPECTOR CARD (GAMBAR 3 & SUNGAI JATIM)
+  // SHOW GOOGLE EARTH INSPECTOR CARD (GAMBAR 3, SUNGAI JATIM, & ASET TANAH)
   function showGoogleEarthInspector(feature, di, layer) {
     const p = feature.properties || {};
     const geomType = feature.geometry ? feature.geometry.type : '';
     const isRiver = Boolean(p.ws_slug || p.Sungai || p.WS);
-    const tipe = isRiver ? 'sungai' : (p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan')));
+    const isAsetTanah = p.tipe === 'aset_tanah' || Boolean(p.kode_aset && p.kategori);
+    const tipe = isRiver ? 'sungai' : (isAsetTanah ? 'aset_tanah' : (p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'))));
 
     const inspector = document.getElementById('googleEarthInspector');
     if (!inspector) return;
@@ -288,6 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
       iconContainer.innerHTML = '<i class="fa-solid fa-route" style="color: #00e5ff;"></i>';
     } else if (tipe === 'sungai') {
       iconContainer.innerHTML = '<i class="fa-solid fa-water" style="color: #38bdf8;"></i>';
+    } else if (tipe === 'aset_tanah') {
+      iconContainer.innerHTML = `<i class="fa-solid fa-vector-square" style="color: ${p.fillColor || '#f97316'};"></i>`;
     } else {
       iconContainer.innerHTML = '<i class="fa-solid fa-map-pin" style="color: #eab308;"></i>';
     }
@@ -295,14 +300,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Title
     const title = isRiver
       ? (p.Sungai ? `Sungai ${p.Sungai}` : 'Alur Sungai Jatim')
-      : (p.name || p.nomenklatur || p.nama || (tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi')));
+      : (isAsetTanah ? (p.nama_aset || 'Aset Tanah Sempadan') : (p.name || p.nomenklatur || p.nama || (tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi'))));
     document.getElementById('geTitle').textContent = title;
     document.getElementById('geTitle').title = title;
 
     // Subtitle
     const subLabel = isRiver 
       ? `${p.ws_name || p.WS || 'Wilayah Sungai'} • DAS ${p.DAS || '-'}`
-      : `${tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi')} • ${p.di_name || (di ? di.nama_di : 'Daerah Irigasi')}`;
+      : (isAsetTanah ? `${p.kategori} • ${p.status_tanah || 'Aset Pemerintah'}` : `${tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi')} • ${p.di_name || (di ? di.nama_di : 'Daerah Irigasi')}`);
     document.getElementById('geSubTitle').textContent = subLabel;
 
     // Metrics Group
@@ -310,11 +315,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const perimeterRow = document.getElementById('gePerimeterRow');
     const perimeterLabel = document.getElementById('gePerimeterLabel');
 
-    if (tipe === 'petak') {
+    if (tipe === 'petak' || tipe === 'aset_tanah') {
       areaRow.style.display = 'block';
-      document.getElementById('geAreaVal').textContent = p.area_m2 || '-';
-      document.getElementById('geAreaHaVal').textContent = p.area_ha || '-';
-      perimeterLabel.textContent = 'Perimeter';
+      document.getElementById('geAreaVal').textContent = typeof p.luas_m2 === 'number' ? `${p.luas_m2.toLocaleString('id-ID')} m²` : (p.area_m2 || '-');
+      document.getElementById('geAreaHaVal').textContent = p.luas_ha || p.area_ha || '-';
+      perimeterLabel.textContent = tipe === 'aset_tanah' ? 'Keliling Sempadan' : 'Perimeter';
       document.getElementById('gePerimeterVal').textContent = p.perimeter_m || '-';
     } else if (tipe === 'saluran' || tipe === 'sungai') {
       areaRow.style.display = 'none';
@@ -331,23 +336,41 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Attributes list
-    if (isRiver) {
-      document.getElementById('geAttrIdDi').textContent = p.ws_name || p.WS || '-';
-      document.getElementById('geAttrKAset').textContent = p.Tipe_Sungai || 'Sungai Utama';
-      document.getElementById('geAttrNama').textContent = p.Sungai || '-';
-      document.getElementById('geAttrNomenklatur').textContent = p.Induk ? `Induk: ${p.Induk}` : (p.Nomenklatr || '-');
-      document.getElementById('geAttrNorec').textContent = p.Kabupaten || '-';
-      document.getElementById('geAttrDi').textContent = p.DAS ? `DAS ${p.DAS}` : '-';
-      document.getElementById('geAttrUpt').textContent = p.keterangan || 'Wilayah Sungai PUSDA Jatim';
+    // Attributes list - update dynamic key labels
+    const attrRows = inspector.querySelectorAll('.ge-attr-row');
+    const setAttrRow = (idx, key, val) => {
+      if (attrRows[idx]) {
+        const keyEl = attrRows[idx].querySelector('.ge-attr-key');
+        const valEl = attrRows[idx].querySelector('.ge-attr-val');
+        if (keyEl) keyEl.textContent = key;
+        if (valEl) valEl.textContent = val || '-';
+      }
+    };
+
+    if (tipe === 'aset_tanah') {
+      setAttrRow(0, 'kode_aset', p.kode_aset);
+      setAttrRow(1, 'kategori', p.kategori);
+      setAttrRow(2, 'nama_aset', p.nama_aset);
+      setAttrRow(3, 'no_sertifikat', p.no_sertifikat);
+      setAttrRow(4, 'status_tanah', p.status_tanah);
+      setAttrRow(5, 'Lokasi / DI', p.di_name || p.kabupaten);
+      setAttrRow(6, 'UPT & Kondisi', `${p.upt} • ${p.kondisi_fisik || 'Terawat'}`);
+    } else if (isRiver) {
+      setAttrRow(0, 'Wilayah Sungai', p.ws_name || p.WS);
+      setAttrRow(1, 'Tipe Sungai', p.Tipe_Sungai || 'Sungai Utama');
+      setAttrRow(2, 'Nama Sungai', p.Sungai);
+      setAttrRow(3, 'Induk Aliran', p.Induk ? `Induk: ${p.Induk}` : (p.Nomenklatr || '-'));
+      setAttrRow(4, 'Kabupaten', p.Kabupaten);
+      setAttrRow(5, 'DAS', p.DAS ? `DAS ${p.DAS}` : '-');
+      setAttrRow(6, 'Pengelola', p.keterangan || 'Wilayah Sungai PUSDA Jatim');
     } else {
-      document.getElementById('geAttrIdDi').textContent = p.id_di || (di ? di.id : '-');
-      document.getElementById('geAttrKAset').textContent = p.k_aset || '-';
-      document.getElementById('geAttrNama').textContent = p.nama || p.name || '-';
-      document.getElementById('geAttrNomenklatur').textContent = p.nomenklatur || '-';
-      document.getElementById('geAttrNorec').textContent = p.norec || '-';
-      document.getElementById('geAttrDi').textContent = p.di_name || (di ? di.nama_di : '-');
-      document.getElementById('geAttrUpt').textContent = p.upt || (di ? di.upt : '-');
+      setAttrRow(0, 'id_di', p.id_di || (di ? di.id : '-'));
+      setAttrRow(1, 'k_aset', p.k_aset);
+      setAttrRow(2, 'nama', p.nama || p.name);
+      setAttrRow(3, 'nomenklatur', p.nomenklatur);
+      setAttrRow(4, 'norec', p.norec);
+      setAttrRow(5, 'Daerah Irigasi', p.di_name || (di ? di.nama_di : '-'));
+      setAttrRow(6, 'UPT / Wilayah', p.upt || (di ? di.upt : '-'));
     }
 
     // Highlight active layer style without corrupting original rank styling
@@ -362,18 +385,21 @@ document.addEventListener('DOMContentLoaded', () => {
           weight: layer.options.weight,
           fillColor: layer.options.fillColor,
           fillOpacity: layer.options.fillOpacity,
-          opacity: layer.options.opacity
+          opacity: layer.options.opacity,
+          dashArray: layer.options.dashArray
         };
       }
       if (tipe === 'saluran' || tipe === 'sungai') {
         layer.setStyle({ color: '#ffffff', weight: 4.8, opacity: 1.0 });
+      } else if (tipe === 'aset_tanah') {
+        layer.setStyle({ color: '#ffffff', weight: 3.5, fillOpacity: 0.85 });
       } else if (tipe === 'petak') {
         layer.setStyle({ fillColor: '#4ade80', fillOpacity: 0.65, weight: 3.8, color: '#ffffff' });
       }
     }
 
     // Store active feature
-    window.currentGeActiveFeature = { feature, di, layer, isRiver };
+    window.currentGeActiveFeature = { feature, di, layer, isRiver, isAsetTanah };
 
     // Show card
     inspector.classList.remove('hidden');
@@ -425,9 +451,43 @@ document.addEventListener('DOMContentLoaded', () => {
       // Feature Group penampung dual-stroke casing dan layer utama
       const diFeatureGroup = L.featureGroup();
 
-      // 1. UNDERLAY CASING LAYER: Garis Luar Pembungkus Saluran Irigasi (Opsi A - Gambar 1)
+      // Helper function for attaching events & tooltips to interactive DI elements
+      function attachDiEvents(feature, featLayer, tipe) {
+        const p = feature.properties || {};
+        const title = p.name || p.nomenklatur || p.nama || (tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi'));
+
+        if (featLayer.options) {
+          featLayer._originalStyle = {
+            color: featLayer.options.color,
+            weight: featLayer.options.weight,
+            fillColor: featLayer.options.fillColor,
+            fillOpacity: featLayer.options.fillOpacity,
+            opacity: featLayer.options.opacity
+          };
+        }
+
+        featLayer.bindTooltip(`
+          <div style="font-family: Inter, sans-serif;">
+            <span style="display: inline-block; background: ${colorCfg.badgeBg}; color: ${colorCfg.badgeText}; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 3px; margin-bottom: 2px;">#${rankIndex + 1} ${di.nama_di}</span><br>
+            <strong>${title}</strong><br>
+            <small style="color: #94a3b8;">${tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi')}</small>
+          </div>
+        `, { sticky: true, className: 'ge-map-tooltip' });
+
+        featLayer.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          showGoogleEarthInspector(feature, di, featLayer);
+        });
+
+        if (!firstInteractiveFeature && (tipe === 'petak' || tipe === 'saluran')) {
+          firstInteractiveFeature = feature;
+          firstInteractiveLayer = featLayer;
+        }
+      }
+
+      // 1. UNDERLAY CASING LAYER: Garis Luar Pembungkus Saluran Irigasi (pane: diCanalsCasingPane zIndex 438)
       const casingLayer = L.geoJSON(geoJsonData, {
-        pane: 'diHighlightPane',
+        pane: 'diCanalsCasingPane',
         filter: function(feature) {
           const geomType = feature.geometry ? feature.geometry.type : '';
           const p = feature.properties || {};
@@ -436,7 +496,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         style: function() {
           return {
-            color: colorCfg.color, // Warna pembeda DI di tepi saluran (contoh: amber orange Gambar 1)
+            color: colorCfg.color, // Warna pembeda DI di tepi saluran
             weight: 6.2,           // Casing lebar membungkus inti air
             opacity: 0.95,
             lineCap: 'round',
@@ -447,79 +507,76 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       casingLayer.addTo(diFeatureGroup);
 
-      // 2. MAIN INTERACTIVE VECTOR LAYER (Inti Saluran Air, Petak Sawah, Bangunan)
-      const mainLayer = L.geoJSON(geoJsonData, {
-        pane: 'diHighlightPane',
-        style: function(feature) {
-          const p = feature.properties || {};
+      // 2. LAYER PETAK SAWAH: Poligon Hamparan Sawah Hijau (pane: diPetakPane zIndex 445 - DI BAWAH ASET TANAH)
+      const petakLayer = L.geoJSON(geoJsonData, {
+        pane: 'diPetakPane',
+        filter: function(feature) {
           const geomType = feature.geometry ? feature.geometry.type : '';
+          const p = feature.properties || {};
           const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
+          return (geomType === 'Polygon' || geomType === 'MultiPolygon') && tipe !== 'saluran';
+        },
+        style: function() {
+          countPetak++;
+          return {
+            fillColor: '#22c55e',  // Warna petak sawah: Hijau alami
+            fillOpacity: 0.35,      // Transparan agar tekstur citra satelit tetap terlihat
+            color: colorCfg.color, // Border petak sawah: Warna pembeda DI
+            weight: 2.8,
+            opacity: 1.0,
+            lineCap: 'round',
+            lineJoin: 'round'
+          };
+        },
+        onEachFeature: function(feature, featLayer) {
+          attachDiEvents(feature, featLayer, 'petak');
+        }
+      });
+      petakLayer.addTo(diFeatureGroup);
 
-          if (tipe === 'saluran' || geomType === 'LineString' || geomType === 'MultiLineString') {
-            countSaluran++;
-            return {
-              color: '#00e5ff', // Inti saluran: Biru muda air alami (Gambar 1)
-              weight: 2.8,
-              opacity: 1.0,
-              lineCap: 'round',
-              lineJoin: 'round'
-            };
-          } else {
-            countPetak++;
-            return {
-              fillColor: '#22c55e',  // Warna petak sawah: Hijau alami (Gambar 1)
-              fillOpacity: 0.35,      // Transparan agar tekstur citra satelit tetap terlihat
-              color: colorCfg.color, // Border petak sawah: Warna pembeda DI (Gambar 1)
-              weight: 2.8,
-              opacity: 1.0,
-              lineCap: 'round',
-              lineJoin: 'round'
-            };
-          }
+      // 3. LAYER SALURAN IRIGASI: Inti Air Biru (pane: diCanalsPane zIndex 450)
+      const canalsLayer = L.geoJSON(geoJsonData, {
+        pane: 'diCanalsPane',
+        filter: function(feature) {
+          const geomType = feature.geometry ? feature.geometry.type : '';
+          const p = feature.properties || {};
+          const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
+          return tipe === 'saluran' || geomType === 'LineString' || geomType === 'MultiLineString';
+        },
+        style: function() {
+          countSaluran++;
+          return {
+            color: '#00e5ff', // Inti saluran: Biru muda air alami
+            weight: 2.8,
+            opacity: 1.0,
+            lineCap: 'round',
+            lineJoin: 'round'
+          };
+        },
+        onEachFeature: function(feature, featLayer) {
+          attachDiEvents(feature, featLayer, 'saluran');
+        }
+      });
+      canalsLayer.addTo(diFeatureGroup);
+
+      // 4. LAYER TITIK BANGUNAN AIR: Pushpin KMZ (pane: diBangunanPane zIndex 520 - DIGESER KE ATAS ASET TANAH)
+      const bangunanLayer = L.geoJSON(geoJsonData, {
+        pane: 'diBangunanPane',
+        filter: function(feature) {
+          const geomType = feature.geometry ? feature.geometry.type : '';
+          const p = feature.properties || {};
+          const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
+          return geomType === 'Point' || geomType === 'MultiPoint' || tipe === 'bangunan';
         },
         pointToLayer: function(feature, latlng) {
           countBangunan++;
-          return L.marker(latlng, { icon: pushpinIcon });
+          return L.marker(latlng, { icon: pushpinIcon, pane: 'diBangunanPane' });
         },
         onEachFeature: function(feature, featLayer) {
-          const p = feature.properties || {};
-          const geomType = feature.geometry ? feature.geometry.type : '';
-          const tipe = p.tipe || (geomType === 'Polygon' ? 'petak' : (geomType === 'LineString' ? 'saluran' : 'bangunan'));
-          const title = p.name || p.nomenklatur || p.nama || (tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi'));
-
-          // Simpan original style agar tidak rusak saat di-hover / di-klik
-          if (featLayer.options) {
-            featLayer._originalStyle = {
-              color: featLayer.options.color,
-              weight: featLayer.options.weight,
-              fillColor: featLayer.options.fillColor,
-              fillOpacity: featLayer.options.fillOpacity,
-              opacity: featLayer.options.opacity
-            };
-          }
-
-          // Tooltip on hover dengan identitas DI & rank color badge
-          featLayer.bindTooltip(`
-            <div style="font-family: Inter, sans-serif;">
-              <span style="display: inline-block; background: ${colorCfg.badgeBg}; color: ${colorCfg.badgeText}; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 3px; margin-bottom: 2px;">#${rankIndex + 1} ${di.nama_di}</span><br>
-              <strong>${title}</strong><br>
-              <small style="color: #94a3b8;">${tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi')}</small>
-            </div>
-          `, { sticky: true, className: 'ge-map-tooltip' });
-
-          // Click event membuka Google Earth Inspector Card (Gambar 3)
-          featLayer.on('click', (e) => {
-            L.DomEvent.stopPropagation(e);
-            showGoogleEarthInspector(feature, di, featLayer);
-          });
-
-          if (!firstInteractiveFeature && (tipe === 'petak' || tipe === 'saluran')) {
-            firstInteractiveFeature = feature;
-            firstInteractiveLayer = featLayer;
-          }
+          attachDiEvents(feature, featLayer, 'bangunan');
         }
       });
-      mainLayer.addTo(diFeatureGroup);
+      bangunanLayer.addTo(diFeatureGroup);
 
       diFeatureGroup.addTo(map);
 
@@ -1499,6 +1556,26 @@ document.addEventListener('DOMContentLoaded', () => {
       const recPane = map.createPane('recommendedRiversPane');
       recPane.style.zIndex = 420;
     }
+    if (!map.getPane('diCanalsCasingPane')) {
+      const p = map.createPane('diCanalsCasingPane');
+      p.style.zIndex = 438;
+    }
+    if (!map.getPane('diPetakPane')) {
+      const petakPane = map.createPane('diPetakPane');
+      petakPane.style.zIndex = 445; // LAYER KE-8: PETAK SAWAH (Di bawah aset tanah)
+    }
+    if (!map.getPane('diCanalsPane')) {
+      const canalsPane = map.createPane('diCanalsPane');
+      canalsPane.style.zIndex = 450;
+    }
+    if (!map.getPane('asetTanahPane')) {
+      const asetPane = map.createPane('asetTanahPane');
+      asetPane.style.zIndex = 460; // LAYER ASET TANAH BERADA DI ATAS PETAK SAWAH!
+    }
+    if (!map.getPane('diBangunanPane')) {
+      const bgnPane = map.createPane('diBangunanPane');
+      bgnPane.style.zIndex = 520; // TITIK PIN & BANGUNAN AIR DIGESER KE ATAS ASET TANAH!
+    }
     if (!map.getPane('diHighlightPane')) {
       const diPane = map.createPane('diHighlightPane');
       diPane.style.zIndex = 450;
@@ -1519,6 +1596,165 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2. Render Jaringan Sungai Ringan Awal (HANYA Sungai Utama Orde 1)
     renderOrde1Rivers();
+  }
+
+  // --- FEATURE: ASET TANAH & SEMPADAN (STRESS TEST 1.800 POLIGON 18 KATEGORI) ---
+  let asetTanahLayer = null;
+  let isAsetTanahVisible = true;
+  let activeAsetTanahCategory = 'ALL';
+  let asetTanahDataCache = null;
+
+  function renderAsetTanahFeatures(fc) {
+    if (!fc || !fc.features) return;
+    asetTanahDataCache = fc;
+
+    if (asetTanahLayer) {
+      map.removeLayer(asetTanahLayer);
+      asetTanahLayer = null;
+    }
+
+    // High performance Leaflet Canvas renderer for stress testing
+    const asetCanvasRenderer = L.canvas({
+      pane: 'asetTanahPane',
+      padding: 0.25,
+      tolerance: 6
+    });
+
+    asetTanahLayer = L.geoJSON(fc, {
+      pane: 'asetTanahPane',
+      renderer: asetCanvasRenderer,
+      filter: function(feat) {
+        if (!isAsetTanahVisible) return false;
+        if (activeAsetTanahCategory === 'ALL') return true;
+        const p = feat.properties || {};
+        return p.kategori === activeAsetTanahCategory;
+      },
+      style: function(feat) {
+        const p = feat.properties || {};
+        return {
+          fillColor: p.fillColor || '#f97316',
+          fillOpacity: p.is_bekas ? 0.32 : 0.48,
+          color: p.color || '#ea580c',
+          weight: p.is_bekas ? 1.8 : 2.4,
+          dashArray: p.dashArray || null,
+          lineCap: 'round',
+          lineJoin: 'round'
+        };
+      },
+      onEachFeature: function(feat, layer) {
+        const p = feat.properties || {};
+        const title = p.nama_aset || 'Aset Tanah Sempadan';
+        const badgeColor = p.fillColor || '#f97316';
+
+        // Simpan style asli untuk mouseout
+        if (layer.options) {
+          layer._originalStyle = {
+            fillColor: p.fillColor || '#f97316',
+            fillOpacity: p.is_bekas ? 0.32 : 0.48,
+            color: p.color || '#ea580c',
+            weight: p.is_bekas ? 1.8 : 2.4,
+            dashArray: p.dashArray || null
+          };
+        }
+
+        layer.bindTooltip(`
+          <div style="font-family: Inter, sans-serif; min-width: 140px;">
+            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: ${badgeColor};"></span>
+              <strong style="color: ${badgeColor}; font-size: 0.7rem; text-transform: uppercase;">${p.kategori}</strong>
+            </div>
+            <div style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; line-height: 1.2; margin-bottom: 3px;">${title}</div>
+            <div style="font-size: 0.72rem; color: #94a3b8; display: flex; gap: 8px;">
+              <span>Luas: <b style="color: #38bdf8;">${p.luas_ha || (p.luas_m2 ? p.luas_m2 + ' m²' : '-')}</b></span>
+              <span>•</span>
+              <span>${p.kabupaten || p.upt || ''}</span>
+            </div>
+          </div>
+        `, { sticky: true, className: 'ge-map-tooltip' });
+
+        layer.on('click', function(e) {
+          L.DomEvent.stopPropagation(e);
+          showGoogleEarthInspector(feat, null, layer);
+        });
+
+        // Hover effect
+        layer.on('mouseover', function() {
+          if (layer.setStyle && layer !== selectedVectorLayer) {
+            layer.setStyle({
+              weight: 3.5,
+              color: '#ffffff',
+              fillOpacity: 0.75
+            });
+          }
+        });
+
+        layer.on('mouseout', function() {
+          if (layer.setStyle && layer !== selectedVectorLayer) {
+            layer.setStyle(layer._originalStyle || {
+              fillColor: p.fillColor || '#f97316',
+              fillOpacity: p.is_bekas ? 0.32 : 0.48,
+              color: p.color || '#ea580c',
+              weight: p.is_bekas ? 1.8 : 2.4,
+              dashArray: p.dashArray || null
+            });
+          }
+        });
+      }
+    });
+
+    if (isAsetTanahVisible) {
+      asetTanahLayer.addTo(map);
+    }
+  }
+
+  function initAsetTanah() {
+    initRiverPanes();
+
+    if (window.ASET_TANAH_DATA && window.ASET_TANAH_DATA.features) {
+      renderAsetTanahFeatures(window.ASET_TANAH_DATA);
+    } else {
+      fetch('data/aset_tanah.json')
+        .then(res => res.json())
+        .then(data => {
+          window.ASET_TANAH_DATA = data;
+          renderAsetTanahFeatures(data);
+        })
+        .catch(err => console.warn('Gagal memuat data aset tanah:', err));
+    }
+  }
+
+  function setAsetTanahCategoryFilter(cat) {
+    activeAsetTanahCategory = cat;
+    if (asetTanahDataCache) {
+      renderAsetTanahFeatures(asetTanahDataCache);
+      const catCount = cat === 'ALL' ? asetTanahDataCache.features.length : asetTanahDataCache.features.filter(f => f.properties && f.properties.kategori === cat).length;
+      showToast(
+        'Filter Kategori Aset',
+        `Menampilkan <strong>${catCount} poligon</strong> kategori <strong>${cat === 'ALL' ? 'Semua Kategori' : cat}</strong>.`
+      );
+    }
+  }
+
+  function setAsetTanahVisibility(visible) {
+    isAsetTanahVisible = visible;
+    if (asetTanahLayer) {
+      if (isAsetTanahVisible) {
+        if (!map.hasLayer(asetTanahLayer)) map.addLayer(asetTanahLayer);
+      } else {
+        if (map.hasLayer(asetTanahLayer)) map.removeLayer(asetTanahLayer);
+      }
+    }
+    const btnToggleAsetTanah = document.getElementById('btnToggleAsetTanah');
+    const chkLayerAsetTanah = document.getElementById('chkLayerAsetTanah');
+    const filterRowAsetTanah = document.getElementById('filterRowAsetTanah');
+    if (btnToggleAsetTanah) btnToggleAsetTanah.classList.toggle('active', isAsetTanahVisible);
+    if (chkLayerAsetTanah) chkLayerAsetTanah.checked = isAsetTanahVisible;
+    if (filterRowAsetTanah) filterRowAsetTanah.classList.toggle('active', isAsetTanahVisible);
+    updateLayerCounter();
+    showToast(
+      isAsetTanahVisible ? 'Layer Aset Tanah Aktif' : 'Layer Aset Tanah Disembunyikan',
+      isAsetTanahVisible ? '1.800 Poligon tanah sempadan & aset pemerintah ditampilkan.' : 'Poligon aset tanah disembunyikan.'
+    );
   }
 
   // --- FEATURE 1: BATAS WILAYAH SUNGAI (WS) NON-BLOCKING VISUAL LAYER ---
@@ -2026,10 +2262,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- UNIFIED LAYER FILTER (DI, WS, SUNGAI) CONTROLS ---
+  // --- UNIFIED LAYER FILTER (DI, WS, SUNGAI, ASET TANAH) CONTROLS ---
   const btnToggleDi = document.getElementById('btnToggleDi');
   const btnToggleWs = document.getElementById('btnToggleWs');
   const btnToggleRivers = document.getElementById('btnToggleRivers');
+  const btnToggleAsetTanah = document.getElementById('btnToggleAsetTanah');
 
   const btnToggleLayerMenu = document.getElementById('btnToggleLayerMenu');
   const layerFilterDropdown = document.getElementById('layerFilterDropdown');
@@ -2038,16 +2275,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const chkLayerDi = document.getElementById('chkLayerDi');
   const chkLayerWs = document.getElementById('chkLayerWs');
   const chkLayerRivers = document.getElementById('chkLayerRivers');
+  const chkLayerAsetTanah = document.getElementById('chkLayerAsetTanah');
 
   const filterRowDi = document.getElementById('filterRowDi');
   const filterRowWs = document.getElementById('filterRowWs');
   const filterRowRivers = document.getElementById('filterRowRivers');
+  const filterRowAsetTanah = document.getElementById('filterRowAsetTanah');
+  const selAsetCategory = document.getElementById('selAsetCategory');
 
   function updateLayerCounter() {
     let count = 0;
     if (isDiVisible) count++;
     if (isWsVisible) count++;
     if (isRiversVisible) count++;
+    if (isAsetTanahVisible) count++;
     if (layerFilterCounter) {
       layerFilterCounter.textContent = `${count} Aktif`;
     }
@@ -2119,11 +2360,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnToggleDi) btnToggleDi.addEventListener('click', () => setDiVisibility(!isDiVisible));
   if (btnToggleWs) btnToggleWs.addEventListener('click', () => setWsVisibility(!isWsVisible));
   if (btnToggleRivers) btnToggleRivers.addEventListener('click', () => setRiversVisibility(!isRiversVisible));
+  if (btnToggleAsetTanah) btnToggleAsetTanah.addEventListener('click', () => setAsetTanahVisibility(!isAsetTanahVisible));
 
   // Dropdown checkboxes
   if (chkLayerDi) chkLayerDi.addEventListener('change', (e) => setDiVisibility(e.target.checked));
   if (chkLayerWs) chkLayerWs.addEventListener('change', (e) => setWsVisibility(e.target.checked));
   if (chkLayerRivers) chkLayerRivers.addEventListener('change', (e) => setRiversVisibility(e.target.checked));
+  if (chkLayerAsetTanah) chkLayerAsetTanah.addEventListener('change', (e) => setAsetTanahVisibility(e.target.checked));
 
   // Dropdown row clicks
   if (filterRowDi) {
@@ -2146,6 +2389,19 @@ document.addEventListener('DOMContentLoaded', () => {
         setRiversVisibility(!isRiversVisible);
       }
     });
+  }
+  if (filterRowAsetTanah) {
+    filterRowAsetTanah.addEventListener('click', (e) => {
+      if (e.target !== chkLayerAsetTanah && !e.target.closest('.custom-switch') && !e.target.closest('.aset-category-filter-wrap')) {
+        setAsetTanahVisibility(!isAsetTanahVisible);
+      }
+    });
+  }
+  if (selAsetCategory) {
+    selAsetCategory.addEventListener('change', (e) => {
+      setAsetTanahCategoryFilter(e.target.value);
+    });
+    selAsetCategory.addEventListener('click', (e) => e.stopPropagation());
   }
 
   // Dropdown Menu Toggle & Outside Click

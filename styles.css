@@ -2303,3 +2303,61 @@ input:focus, select:focus {
   }
 }
 
+/* --- ASET TANAH & SEMPADAN UI STYLES --- */
+.badge-mini-counter {
+  background: rgba(249, 115, 22, 0.25);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-river-toggle.active .badge-mini-counter {
+  background: #ffffff;
+  color: #c2410c;
+  border-color: #ffffff;
+}
+
+.aset-category-filter-wrap {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.aset-filter-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fed7aa;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aset-category-select {
+  width: 100%;
+  padding: 6px 8px;
+  background: #0f172a;
+  border: 1px solid rgba(249, 115, 22, 0.45);
+  border-radius: 6px;
+  color: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.aset-category-select:focus {
+  border-color: #f97316;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
+}
+

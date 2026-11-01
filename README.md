@@ -104,13 +104,17 @@ WebGIS ini mengintegrasikan seluruh jaringan sungai alami di Jawa Timur yang ter
 * **Warna Base Inti Sungai (River Core)**: Menggunakan **Biru Tua Alami (`#1e40af`, width 2.5–3.0px)** sebagai lambang air sungai alami yang mengalir deras, membedakannya secara tegas dari saluran irigasi buatan yang berinti biru muda cerah (`#00e5ff`).
 * **Warna Pembungkus Luar (Outer Casing)**: Garis luar ganda (*dual-stroke casing*, *width* 4.8–5.6px) dengan warna tematik per Wilayah Sungai sehingga aliran sungai di tiap wilayah sungai langsung terlihat kontras, tegas, dan mudah diidentifikasi.
 * **Hierarki Visual Layering (Leaflet Custom Panes)**:
-  * `Tile Basemap` (zIndex 200)
+  * `Tile Basemap` (zIndex 200) — Esri Satelit / OSM.
   * `wsBoundsPane` (zIndex 405) — Poligon batas dan notasi text WS.
   * `riversCasingPane` (zIndex 410) & `riversCorePane` (zIndex 412) — Sungai alami Orde 1-2.
   * `recommendedRiversPane` (zIndex 420) — Sungai rekomendasi terdekat & garis konektor proksimitas.
-  * `diHighlightPane` (zIndex 450) — Jaringan DI (saluran, petak, bangunan).
-  * `diClusterPane` (zIndex 600+) — Pin DI.
-  * `radarPane` (zIndex 1000) — Radar proksimitas & target pin.
+  * `diCanalsCasingPane` (zIndex 438) — Casing luar saluran irigasi.
+  * `diPetakPane` (zIndex 445) — Poligon petak sawah / daerah layanan irigasi.
+  * `diCanalsPane` (zIndex 450) — Inti garis saluran irigasi air biru.
+  * `asetTanahPane` (zIndex 460) — **Layer Aset Tanah & Sempadan Pemerintah (18 Kategori, 1.800 Poligon Canvas)** tepat di atas petak sawah.
+  * `diBangunanPane` (zIndex 520) — Titik inventaris bangunan air / pushpin kuning KMZ di atas aset tanah.
+  * `diClusterPane` / `markerPane` (zIndex 600+) — Pin sebaran 181 DI.
+  * `radarPane` (zIndex 1000) — Radar proksimitas & target pinpoint.
 * **Interaktivitas Sungai & Google Earth Inspector**:
   * **Hover Tooltip**: Menampilkan nama sungai, orde sungai, panjang, dan wilayah sungai.
   * **Klik Sungai**: Membuka kartu **Google Earth Inspector** dengan data teknis: *Nama Sungai*, *Wilayah Sungai*, *DAS*, *Orde Sungai*, *Panjang Sungai (km & m)*, dan *Kabupaten*.
