@@ -63,19 +63,26 @@ ws_configs = [
     }
 ]
 
-def clean_poly(geom):
+def clean_geom(geom):
     geom = shapely.make_valid(geom)
     if geom.geom_type == 'Polygon':
         return geom.buffer(0)
     elif geom.geom_type == 'MultiPolygon':
-        largest = max(geom.geoms, key=lambda g: g.area)
-        return largest.buffer(0)
+        valid_geoms = [g.buffer(0) for g in geom.geoms if g.area > 1e-5]
+        if len(valid_geoms) == 1:
+            return valid_geoms[0]
+        return sg.MultiPolygon(valid_geoms)
     elif geom.geom_type == 'GeometryCollection':
-        polys = [g for g in geom.geoms if g.geom_type in ('Polygon', 'MultiPolygon')]
+        polys = []
+        for g in geom.geoms:
+            if g.geom_type == 'Polygon':
+                polys.append(g.buffer(0))
+            elif g.geom_type == 'MultiPolygon':
+                polys.extend([sub_g.buffer(0) for sub_g in g.geoms if sub_g.area > 1e-5])
         if not polys: return sg.Polygon()
         u = unary_union(polys)
-        return clean_poly(u)
-    return sg.Polygon()
+        return clean_geom(u)
+    return geom
 
 raw_polygons = {}
 stats = {}
@@ -104,17 +111,36 @@ for ws in ws_configs:
             for line in coords:
                 all_points.extend(line)
 
-    multi_pt = sg.MultiPoint(all_points)
-    hull = shapely.concave_hull(multi_pt, ratio=ws["ratio"], allow_holes=False)
-    poly = hull.buffer(0.015).simplify(0.003)
-    poly = clean_poly(poly)
-    raw_polygons[slug] = poly
+    if slug == "madura":
+        # OPSI 1: MultiPolygon Kepulauan Tanpa Jembatan Laut
+        groups = {
+            'mainland': [p for p in all_points if p[1] <= -6.2 and p[0] < 114.20],
+            'bawean': [p for p in all_points if p[1] > -6.2],
+            'kangean': [p for p in all_points if p[0] > 115.0],
+            'sapudi_raas': [p for p in all_points if 114.20 <= p[0] <= 115.0 and p[1] <= -6.8]
+        }
+        polys = []
+        for gname, gpts in groups.items():
+            if not gpts: continue
+            mp = sg.MultiPoint(gpts)
+            ratio = 0.25 if gname == 'mainland' else 0.4
+            hull = shapely.concave_hull(mp, ratio=ratio, allow_holes=False)
+            poly = hull.buffer(0.012).simplify(0.003)
+            polys.append(poly)
+        u = unary_union(polys)
+        raw_polygons[slug] = clean_geom(u)
+    else:
+        multi_pt = sg.MultiPoint(all_points)
+        hull = shapely.concave_hull(multi_pt, ratio=ws["ratio"], allow_holes=False)
+        poly = hull.buffer(0.012).simplify(0.003)
+        raw_polygons[slug] = clean_geom(poly)
+
     stats[slug] = {
         "count": len(data['features']),
         "km": round(tot_len, 1)
     }
 
-# Pairwise Voronoi cut between neighboring centroids
+# Enforce strict zero overlap via natural boundary difference (No Voronoi knife cuts)
 slugs = [w["slug"] for w in ws_configs]
 for i in range(len(slugs)):
     for j in range(i + 1, len(slugs)):
@@ -122,30 +148,13 @@ for i in range(len(slugs)):
         p1, p2 = raw_polygons[s1], raw_polygons[s2]
         if p1.intersects(p2):
             inter = p1.intersection(p2)
-            if inter.area > 1e-7:
-                c1, c2 = p1.centroid, p2.centroid
-                vor = shapely.voronoi_polygons(sg.MultiPoint([c1, c2]), extend_to=p1.union(p2))
-                half1 = vor.geoms[0] if vor.geoms[0].contains(c1) else vor.geoms[1]
-                half2 = vor.geoms[1] if half1 == vor.geoms[0] else vor.geoms[0]
-
-                raw_polygons[s1] = clean_poly(p1.difference(inter).union(inter.intersection(half1)))
-                raw_polygons[s2] = clean_poly(p2.difference(inter).union(inter.intersection(half2)))
-
-# Enforce strict zero overlap via difference
-for i in range(len(slugs)):
-    for j in range(i + 1, len(slugs)):
-        s1, s2 = slugs[i], slugs[j]
-        p1, p2 = raw_polygons[s1], raw_polygons[s2]
-        if p1.intersects(p2):
-            inter = p1.intersection(p2)
             if inter.area > 1e-9:
-                raw_polygons[s2] = clean_poly(p2.difference(p1))
+                raw_polygons[s2] = clean_geom(p2.difference(p1))
 
-# Final validation & guarantee single valid polygon without self-intersection
+# Final validation & guarantee valid polygon / multipolygon without self-intersection
 final_polygons = {}
 for slug in slugs:
-    p = clean_poly(raw_polygons[slug])
-    # Ensure it is a valid Polygon
+    p = clean_geom(raw_polygons[slug])
     if not p.is_valid:
         p = shapely.make_valid(p).buffer(0)
     final_polygons[slug] = p
@@ -169,21 +178,23 @@ for ws in ws_configs:
     poly = final_polygons[slug]
     centroid = poly.centroid
 
-    # Use higher precision to avoid self-intersection on rounding, or clean rounded poly
-    coords = [[round(x, 5), round(y, 5)] for x, y in poly.exterior.coords]
-    # Check if rounded coordinates form a valid polygon
-    test_p = sg.Polygon(coords)
-    if not test_p.is_valid:
-        test_p = test_p.buffer(0)
-        coords = [[round(x, 5), round(y, 5)] for x, y in test_p.exterior.coords]
-
-    poly_coords = [coords]
+    if poly.geom_type == 'Polygon':
+        coords = [[[round(x, 5), round(y, 5)] for x, y in poly.exterior.coords]]
+        geom_type = "Polygon"
+        print(f"WS {ws['name']}: Polygon with {len(coords[0])} vertices")
+    elif poly.geom_type == 'MultiPolygon':
+        coords = [
+            [[[round(x, 5), round(y, 5)] for x, y in part.exterior.coords]]
+            for part in poly.geoms
+        ]
+        geom_type = "MultiPolygon"
+        print(f"WS {ws['name']}: MultiPolygon with {len(coords)} island parts")
 
     feature = {
         "type": "Feature",
         "geometry": {
-            "type": "Polygon",
-            "coordinates": poly_coords
+            "type": geom_type,
+            "coordinates": coords
         },
         "properties": {
             "slug": slug,
@@ -199,7 +210,6 @@ for ws in ws_configs:
         }
     }
     features.append(feature)
-    print(f"WS {ws['name']}: {len(coords)} vertices, valid: {sg.Polygon(coords).is_valid}")
 
 fc = {
     "type": "FeatureCollection",

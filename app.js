@@ -798,6 +798,131 @@ document.addEventListener('DOMContentLoaded', () => {
     return R * c;
   }
 
+  // --- GEOMETRIC HELPERS (PROYEKSI SEGMEN & JARAK VEKTOR PRESISI) ---
+  function projectPointToSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return { lat: x1, lon: y1 };
+
+    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    return { lat: x1 + t * dx, lon: y1 + t * dy };
+  }
+
+  function isPointInsidePolygon(point, polygon) {
+    if (!polygon || polygon.length < 3) return false;
+    const x = point[0], y = point[1]; // lon, lat
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i][0], yi = polygon[i][1];
+      const xj = polygon[j][0], yj = polygon[j][1];
+      const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-12) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function getMinDistanceToGeometry(targetLat, targetLon, geom) {
+    if (!geom || !geom.coordinates) return { distanceKm: Infinity, closestPoint: null, isInside: false };
+
+    let minDist = Infinity;
+    let bestPoint = null;
+    let isInside = false;
+
+    function checkLineCoords(coords) {
+      if (!coords || coords.length === 0) return;
+      if (coords.length === 1) {
+        const pLat = coords[0][1];
+        const pLon = coords[0][0];
+        const d = calculateDistanceKm(targetLat, targetLon, pLat, pLon);
+        if (d < minDist) {
+          minDist = d;
+          bestPoint = { lat: pLat, lon: pLon };
+        }
+        return;
+      }
+
+      for (let i = 0; i < coords.length - 1; i++) {
+        const p1 = coords[i];
+        const p2 = coords[i + 1];
+        const proj = projectPointToSegment(targetLat, targetLon, p1[1], p1[0], p2[1], p2[0]);
+        const dist = calculateDistanceKm(targetLat, targetLon, proj.lat, proj.lon);
+        if (dist < minDist) {
+          minDist = dist;
+          bestPoint = proj;
+        }
+      }
+    }
+
+    if (geom.type === 'LineString') {
+      checkLineCoords(geom.coordinates);
+    } else if (geom.type === 'MultiLineString') {
+      geom.coordinates.forEach(line => checkLineCoords(line));
+    } else if (geom.type === 'Polygon') {
+      if (geom.coordinates && geom.coordinates[0] && isPointInsidePolygon([targetLon, targetLat], geom.coordinates[0])) {
+        isInside = true;
+      }
+      geom.coordinates.forEach(ring => checkLineCoords(ring));
+    } else if (geom.type === 'MultiPolygon') {
+      geom.coordinates.forEach(poly => {
+        if (poly && poly[0] && isPointInsidePolygon([targetLon, targetLat], poly[0])) {
+          isInside = true;
+        }
+        poly.forEach(ring => checkLineCoords(ring));
+      });
+    } else if (geom.type === 'Point') {
+      checkLineCoords([geom.coordinates]);
+    }
+
+    if (isInside) {
+      minDist = 0.0;
+    }
+
+    return { distanceKm: minDist, closestPoint: bestPoint, isInside: isInside };
+  }
+
+  function getMinDistanceToBbox(targetLat, targetLon, bounds) {
+    if (!bounds || bounds.length < 4) return Infinity;
+    const [minLat, minLon, maxLat, maxLon] = bounds;
+    const cLat = Math.max(minLat, Math.min(maxLat, targetLat));
+    const cLon = Math.max(minLon, Math.min(maxLon, targetLon));
+    return calculateDistanceKm(targetLat, targetLon, cLat, cLon);
+  }
+
+  function loadDiGeoJsonAsync(diId) {
+    return new Promise((resolve) => {
+      loadDiGeoJson(diId, (data) => {
+        resolve(data);
+      });
+    });
+  }
+
+  function getDiExactVectorDistance(targetLat, targetLon, geoJsonData) {
+    let minD = Infinity;
+    let bestPt = null;
+    let isInside = false;
+
+    if (!geoJsonData || !geoJsonData.features) return { distanceKm: minD, closestPoint: bestPt, isInside };
+
+    for (const feat of geoJsonData.features) {
+      const res = getMinDistanceToGeometry(targetLat, targetLon, feat.geometry);
+      if (res.distanceKm < minD) {
+        minD = res.distanceKm;
+        bestPt = res.closestPoint;
+      }
+      if (res.isInside) {
+        isInside = true;
+      }
+    }
+
+    if (isInside) {
+      minD = 0.0;
+    }
+
+    return { distanceKm: minD, closestPoint: bestPt, isInside };
+  }
+
   // 8. PINPOINT & PROXIMITY SIGNAL (RADAR CORE FEATURE)
   function clearTargetPinpoint() {
     if (activePinpointMarker) {
@@ -875,23 +1000,21 @@ document.addEventListener('DOMContentLoaded', () => {
       zIndexOffset: 1000
     }).addTo(map);
 
-    const dmsLat = formatDdToDms(lat, 'lat');
-    const dmsLon = formatDdToDms(lon, 'lon');
-
+    // REVISI POINT 3 & 4: POPUP MINI COMPACT, MUNCUL DI BAWAH TITIK, HANYA 1 FORMAT DESIMAL
     activePinpointMarker.bindPopup(`
-      <div style="padding: 10px; font-family: Inter, sans-serif; min-width: 200px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="background: rgba(245, 158, 11, 0.25); color: #fbbf24; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">${sourceLabel}</span>
-          <span style="font-size: 0.68rem; color: #94a3b8;"><i class="fa-solid fa-crosshairs"></i> Target</span>
+      <div class="mini-target-popup-wrap">
+        <div class="mini-target-popup-header">
+          <span class="mini-target-badge"><i class="fa-solid fa-crosshairs"></i> ${sourceLabel}</span>
+          <button onclick="window.clearTargetPinpoint()" class="mini-target-btn-close" title="Batalkan Pilihan"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <h4 style="margin: 4px 0; color: #ffffff; font-size: 0.9rem;">Titik Target Aktif</h4>
-        <p style="font-size: 0.74rem; color: #94a3b8; margin: 0;">${lat.toFixed(6)}°, ${lon.toFixed(6)}°</p>
-        <p style="font-size: 0.7rem; color: #38bdf8; font-family: monospace; margin: 2px 0 6px 0;">${dmsLat}, ${dmsLon}</p>
-        <button onclick="window.clearTargetPinpoint()" class="btn-popup popup-btn-clear" style="margin-top: 6px; width: 100%;">
-          <i class="fa-solid fa-xmark"></i> Batal Pilihan
-        </button>
+        <div class="mini-target-coord-val">${lat.toFixed(6)}°, ${lon.toFixed(6)}°</div>
       </div>
-    `).openPopup();
+    `, {
+      offset: [0, 74],
+      className: 'compact-target-popup',
+      closeButton: false,
+      autoPan: false
+    }).openPopup();
 
     // Update Coordinate Badge & Reveal Clear Button in Sidebar
     document.getElementById('pinpointCoordBadge').textContent = `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
@@ -901,7 +1024,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnClearTarget.style.display = 'inline-flex';
     }
 
-    // Reveal Floating Clear Selection Bar on Map
+    // Reveal Floating Clear Selection Bar on Map (Posisinya di bawah agar tidak menutupi banner DI)
     const floatingBar = document.getElementById('floatingClearSelectionBar');
     const floatingCoordVal = document.getElementById('floatingCoordVal');
     if (floatingBar) {
@@ -912,55 +1035,86 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Compute proximity to all DIs
-    const proximityData = allDiData.map(di => {
-      const dist = calculateDistanceKm(lat, lon, di.lat, di.lon);
-      return { ...di, distance: dist };
+    // REVISI POINT 1: HITUNG JARAK VEKTOR TERDEKAT (TEPI LINE / POLIGON) UNTUK DI
+    // Tahap 1: Fast Bounding-Box filtering pada 181 DI sebagai lower bound
+    const candidateDis = allDiData.map(di => {
+      const bDist = getMinDistanceToBbox(lat, lon, di.bounds);
+      const cDist = calculateDistanceKm(lat, lon, di.lat, di.lon);
+      return {
+        ...di,
+        bboxDist: bDist,
+        centroidDist: cDist,
+        sortScore: Math.min(bDist, cDist)
+      };
+    }).sort((a, b) => a.sortScore - b.sortScore);
+
+    // Tampilkan preview awal seketika agar UI responsif
+    const initialNearest = candidateDis.slice(0, 5).map(c => ({
+      ...c,
+      distance: c.bboxDist > 0 ? c.bboxDist : c.centroidDist,
+      closestPoint: { lat: c.lat, lon: c.lon },
+      isInside: false
+    }));
+    renderNearestList(initialNearest);
+
+    // Tahap 2: Evaluasi Vektor Presisi pada Top 8 Candidate
+    const topCandidates = candidateDis.slice(0, 8);
+    Promise.all(topCandidates.map(c => loadDiGeoJsonAsync(c.id).then(geoJsonData => {
+      const vRes = getDiExactVectorDistance(lat, lon, geoJsonData);
+      return {
+        ...c,
+        distance: vRes.distanceKm,
+        closestPoint: vRes.closestPoint || { lat: c.lat, lon: c.lon },
+        isInside: vRes.isInside
+      };
+    }))).then(evaluatedDIs => {
+      // Urutkan naik berdasarkan jarak vektor terdekat yang nyata
+      evaluatedDIs.sort((a, b) => a.distance - b.distance);
+      const nearest5 = evaluatedDIs.slice(0, 5);
+
+      // Gambar garis radar langsung ke titik vektor terdekat (bukan centroid jauh)
+      radarPolylines.forEach(p => map.removeLayer(p));
+      radarPolylines = [];
+      nearest5.forEach((di, index) => {
+        const isNearest = index === 0;
+        const rankColor = NEAREST_RANK_COLORS[index % NEAREST_RANK_COLORS.length].color;
+        const targetCoord = di.closestPoint ? [di.closestPoint.lat, di.closestPoint.lon] : [di.lat, di.lon];
+        const polyline = L.polyline([[lat, lon], targetCoord], {
+          color: rankColor,
+          weight: isNearest ? 3.5 : 2.0,
+          opacity: isNearest ? 0.95 : 0.75,
+          dashArray: '6, 8',
+          lineCap: 'round'
+        }).addTo(map);
+
+        radarPolylines.push(polyline);
+      });
+
+      // Render daftar ranking dengan jarak vektor presisi
+      renderNearestList(nearest5);
+
+      // Auto-highlight DI #1 terdekat
+      clearAllHighlightedDis();
+      loadAndAddDiHighlight(nearest5[0].id, 0, false);
+
+      // Notifikasi Toast dengan informasi jarak vektor terdekat
+      if (nearest5.length > 0) {
+        const top1 = nearest5[0];
+        const distStr = top1.isInside ? 'berada di dalam kawasan DI (0.00 km)' : `berjarak <strong>${top1.distance.toFixed(2)} km</strong> (tepi vektor terdekat)`;
+        showToast(
+          'Sinyal Proksimitas Terdeteksi!',
+          `Titik ini terdekat dengan <strong>${top1.nama_di}</strong> (${top1.upt}) - ${distStr}.`
+        );
+      }
+
+      // Fly to bounds
+      const fitTarget = nearest5[0].closestPoint ? [nearest5[0].closestPoint.lat, nearest5[0].closestPoint.lon] : [nearest5[0].lat, nearest5[0].lon];
+      const fitBounds = L.latLngBounds([[lat, lon], fitTarget]);
+      map.flyToBounds(fitBounds, { padding: [60, 60], maxZoom: 14, duration: 1 });
     });
-
-    // Sort ascending
-    proximityData.sort((a, b) => a.distance - b.distance);
-
-    // Take Top 5 nearest DIs
-    const nearest5 = proximityData.slice(0, 5);
-
-    // Draw animated connection polylines to Top 5 with matching rank color
-    nearest5.forEach((di, index) => {
-      const isNearest = index === 0;
-      const rankColor = NEAREST_RANK_COLORS[index % NEAREST_RANK_COLORS.length].color;
-      const polyline = L.polyline([[lat, lon], [di.lat, di.lon]], {
-        color: rankColor,
-        weight: isNearest ? 3.5 : 2.0,
-        opacity: isNearest ? 0.95 : 0.75,
-        dashArray: '6, 8',
-        lineCap: 'round'
-      }).addTo(map);
-
-      radarPolylines.push(polyline);
-    });
-
-    // Populate Sidebar 5 DI Terdekat
-    renderNearestList(nearest5);
-
-    // Auto-highlight DI #1 terdekat sebagai perbandingan awal
-    clearAllHighlightedDis();
-    loadAndAddDiHighlight(nearest5[0].id, 0, false);
 
     // Hitung & Rekomendasikan Sungai Terdekat (Orde 1-8) On-Demand
     findNearbyRiversAndRecommend(lat, lon);
-
-    // Show Notification Toast
-    if (nearest5.length > 0) {
-      const top1 = nearest5[0];
-      showToast(
-        'Sinyal Proksimitas Terdeteksi!',
-        `Titik ini terdekat dengan <strong>${top1.nama_di}</strong> (${top1.upt}) berjarak <strong>${top1.distance.toFixed(2)} km</strong>.`
-      );
-    }
-
-    // Zoom/Pan to fit pinpoint and top 3 nearest
-    const fitBounds = L.latLngBounds([[lat, lon], [nearest5[0].lat, nearest5[0].lon]]);
-    map.flyToBounds(fitBounds, { padding: [60, 60], maxZoom: 14, duration: 1 });
   }
 
   function renderNearestList(nearestItems) {
@@ -978,6 +1132,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const rank = idx + 1;
       const colorCfg = NEAREST_RANK_COLORS[idx % NEAREST_RANK_COLORS.length];
       const isChecked = activeHighlightedDis.has(item.id);
+      const distLabel = item.isInside ? '0.00 km (Di Dalam)' : `${item.distance.toFixed(2)} km`;
 
       const itemEl = document.createElement('div');
       itemEl.className = `nearest-item rank-${rank} ${isChecked ? 'active-highlight' : ''}`;
@@ -995,7 +1150,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         <div class="item-right">
-          <div class="dist-badge" style="border: 1px solid ${colorCfg.color}; color: ${colorCfg.color};">${item.distance.toFixed(2)} km</div>
+          <div class="dist-badge" style="border: 1px solid ${colorCfg.color}; color: ${colorCfg.color};">${distLabel}</div>
           <button class="btn-focus-di" title="Pusatkan kamera ke DI ini"><i class="fa-solid fa-crosshairs"></i></button>
         </div>
       `;
@@ -1380,11 +1535,12 @@ document.addEventListener('DOMContentLoaded', () => {
         style: function(feat) {
           const p = feat.properties || {};
           return {
-            color: '#0f172a',      // Garis tepi tegas gelap persis batas administrasi/WS
-            weight: 3.2,
-            opacity: 0.9,
+            color: '#0f172a',
+            weight: 2.2,
+            dashArray: '6, 6',     // Garis batas administrasi/WS elegan, tidak memblokir visual jalan dan sungai
+            opacity: 0.85,
             fillColor: p.casing || '#3b82f6',
-            fillOpacity: 0.14,     // Tint warna semi-transparan agar citra satelit tetap terbaca
+            fillOpacity: 0.12,     // Tint warna semi-transparan agar citra satelit tetap terbaca
             lineCap: 'round',
             lineJoin: 'round',
             interactive: false,
@@ -1485,25 +1641,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- GEOMETRIC HELPERS (POINT IN POLYGON & LINE PROJECTION) ---
-  function isPointInsidePolygon(point, polygon) {
-    const x = point[0], y = point[1];
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][0], yi = polygon[i][1];
-      const xj = polygon[j][0], yj = polygon[j][1];
-      const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-      if (intersect) inside = !inside;
-    }
-    return inside;
-  }
-
   function findWsForCoordinate(lat, lon) {
     if (!window.BATAS_WS_DATA || !window.BATAS_WS_DATA.features) return null;
 
     for (const feat of window.BATAS_WS_DATA.features) {
-      const coords = feat.geometry.coordinates[0];
-      if (isPointInsidePolygon([lon, lat], coords)) {
-        return feat.properties;
+      const geom = feat.geometry;
+      if (geom.type === 'Polygon') {
+        const coords = geom.coordinates[0];
+        if (isPointInsidePolygon([lon, lat], coords)) {
+          return feat.properties;
+        }
+      } else if (geom.type === 'MultiPolygon') {
+        for (const polyCoords of geom.coordinates) {
+          if (isPointInsidePolygon([lon, lat], polyCoords[0])) {
+            return feat.properties;
+          }
+        }
       }
     }
 
@@ -1518,34 +1671,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     return closest;
-  }
-
-  function getMinDistanceToLine(targetLat, targetLon, coords) {
-    let minD = Infinity;
-    let bestPt = null;
-
-    for (let i = 0; i < coords.length - 1; i++) {
-      const p1 = coords[i];
-      const p2 = coords[i + 1];
-      const proj = projectPointToSegment(targetLat, targetLon, p1[1], p1[0], p2[1], p2[0]);
-      const dist = calculateDistanceKm(targetLat, targetLon, proj.lat, proj.lon);
-      if (dist < minD) {
-        minD = dist;
-        bestPt = proj;
-      }
-    }
-    return { distanceKm: minD, closestPoint: bestPt };
-  }
-
-  function projectPointToSegment(px, py, x1, y1, x2, y2) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const lenSq = dx * dx + dy * dy;
-    if (lenSq === 0) return { lat: x1, lon: y1 };
-
-    let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
-    t = Math.max(0, Math.min(1, t));
-    return { lat: x1 + t * dx, lon: y1 + t * dy };
   }
 
   function loadRiverGeoJson(slug, callback) {
@@ -1606,30 +1731,16 @@ document.addEventListener('DOMContentLoaded', () => {
       geoJsonData.features.forEach((feat, idx) => {
         const geom = feat.geometry;
         const p = feat.properties || {};
-        let minDist = Infinity;
-        let bestPoint = null;
-
-        if (geom.type === 'LineString') {
-          const res = getMinDistanceToLine(targetLat, targetLon, geom.coordinates);
-          minDist = res.distanceKm;
-          bestPoint = res.closestPoint;
-        } else if (geom.type === 'MultiLineString') {
-          geom.coordinates.forEach(lineCoords => {
-            const res = getMinDistanceToLine(targetLat, targetLon, lineCoords);
-            if (res.distanceKm < minDist) {
-              minDist = res.distanceKm;
-              bestPoint = res.closestPoint;
-            }
-          });
-        }
+        const vRes = getMinDistanceToGeometry(targetLat, targetLon, geom);
 
         riverCandidates.push({
           id: `river_${wsInfo.slug}_${idx}`,
           feature: feat,
           properties: p,
-          distanceKm: minDist,
-          distanceM: Math.round(minDist * 1000),
-          closestPoint: bestPoint,
+          distanceKm: vRes.distanceKm,
+          distanceM: Math.round(vRes.distanceKm * 1000),
+          closestPoint: vRes.closestPoint,
+          isInside: vRes.isInside,
           wsInfo: wsInfo
         });
       });

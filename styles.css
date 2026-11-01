@@ -1230,6 +1230,93 @@ input:focus, select:focus {
   border: 1px solid var(--border-glass) !important;
 }
 
+/* COMPACT TARGET PINPOINT POPUP (MUNCUL DI BAWAH TITIK, UKURAN LEBIH KECIL & MINIMALIS) */
+.compact-target-popup {
+  margin-bottom: 0 !important;
+}
+
+.compact-target-popup .leaflet-popup-content-wrapper {
+  background: rgba(11, 20, 44, 0.94) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65) !important;
+  padding: 0 !important;
+  min-width: 135px !important;
+  max-width: 195px !important;
+}
+
+.compact-target-popup .leaflet-popup-content {
+  margin: 6px 10px !important;
+  line-height: 1.25 !important;
+}
+
+/* Membalik pointer tip agar mengarah ke ATAS menuju marker di atasnya */
+.compact-target-popup .leaflet-popup-tip-container {
+  top: -8px !important;
+  bottom: auto !important;
+  transform: rotate(180deg) !important;
+}
+
+.compact-target-popup .leaflet-popup-tip {
+  background: rgba(11, 20, 44, 0.94) !important;
+  border: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+  box-shadow: none !important;
+}
+
+.mini-target-popup-wrap {
+  font-family: var(--font-sans);
+  user-select: none;
+}
+
+.mini-target-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.mini-target-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.2);
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.mini-target-btn-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.72rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.mini-target-btn-close:hover {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.mini-target-coord-val {
+  font-family: 'JetBrains Mono', monospace, sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #38bdf8;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
 .di-popup-container {
   padding: 16px;
   min-width: 260px;
@@ -1686,27 +1773,28 @@ input:focus, select:focus {
    ========================================================================== */
 .floating-clear-bar {
   position: absolute;
-  top: 70px;
+  bottom: 24px;
+  top: auto;
   left: 50%;
   transform: translateX(-50%);
   z-index: 999;
-  background: rgba(15, 23, 42, 0.82);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(56, 189, 248, 0.45);
   border-radius: 999px;
   padding: 5px 8px 5px 14px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(56, 189, 248, 0.25);
-  animation: slideDownFade 0.25s ease-out;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.65), 0 0 16px rgba(56, 189, 248, 0.25);
+  animation: slideUpFade 0.25s ease-out;
 }
 
-@keyframes slideDownFade {
+@keyframes slideUpFade {
   from {
     opacity: 0;
-    transform: translate(-50%, -12px);
+    transform: translate(-50%, 14px);
   }
   to {
     opacity: 1;
