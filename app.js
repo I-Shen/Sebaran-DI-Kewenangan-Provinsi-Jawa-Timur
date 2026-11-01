@@ -391,10 +391,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (tipe === 'saluran' || tipe === 'sungai') {
         layer.setStyle({ color: '#ffffff', weight: 4.8, opacity: 1.0 });
+        if (layer.bringToFront) layer.bringToFront();
       } else if (tipe === 'aset_tanah') {
         layer.setStyle({ color: '#ffffff', weight: 3.5, fillOpacity: 0.85 });
+        if (layer.bringToFront) layer.bringToFront();
       } else if (tipe === 'petak') {
         layer.setStyle({ fillColor: '#4ade80', fillOpacity: 0.65, weight: 3.8, color: '#ffffff' });
+        if (layer.bringToFront) layer.bringToFront();
       }
     }
 
@@ -477,6 +480,28 @@ document.addEventListener('DOMContentLoaded', () => {
         featLayer.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
           showGoogleEarthInspector(feature, di, featLayer);
+        });
+
+        // Interactive hover feedback
+        featLayer.on('mouseover', () => {
+          if (featLayer.setStyle && featLayer !== selectedVectorLayer) {
+            if (tipe === 'saluran') {
+              featLayer.setStyle({ color: '#ffffff', weight: 4.5 });
+            } else if (tipe === 'petak') {
+              featLayer.setStyle({ fillOpacity: 0.58, weight: 3.5, color: '#ffffff' });
+            }
+          }
+        });
+
+        featLayer.on('mouseout', () => {
+          if (featLayer.setStyle && featLayer !== selectedVectorLayer) {
+            featLayer.setStyle(featLayer._originalStyle || {
+              color: tipe === 'saluran' ? '#00e5ff' : colorCfg.color,
+              weight: 2.8,
+              fillColor: tipe === 'petak' ? '#22c55e' : undefined,
+              fillOpacity: tipe === 'petak' ? 0.35 : undefined
+            });
+          }
         });
 
         if (!firstInteractiveFeature && (tipe === 'petak' || tipe === 'saluran')) {
@@ -583,7 +608,9 @@ document.addEventListener('DOMContentLoaded', () => {
       activeHighlightedDis.set(diId, {
         di,
         layer: diFeatureGroup,
-        mainLayer,
+        mainLayer: diFeatureGroup,
+        firstFeature: firstInteractiveFeature,
+        firstLayer: firstInteractiveLayer,
         rankIndex,
         colorCfg,
         counts: { saluran: countSaluran, petak: countPetak, bangunan: countBangunan }
@@ -710,12 +737,24 @@ document.addEventListener('DOMContentLoaded', () => {
       // Auto inspect first feature
       const entry = activeHighlightedDis.get(diId);
       if (entry) {
-        const targetLayer = entry.mainLayer || entry.layer;
-        targetLayer.eachLayer((featLayer) => {
-          if (!window.currentGeActiveFeature && featLayer.feature) {
-            showGoogleEarthInspector(featLayer.feature, entry.di, featLayer);
+        if (entry.firstFeature && entry.firstLayer) {
+          showGoogleEarthInspector(entry.firstFeature, entry.di, entry.firstLayer);
+        } else {
+          const targetLayer = entry.mainLayer || entry.layer;
+          if (targetLayer && targetLayer.eachLayer) {
+            targetLayer.eachLayer((subLayer) => {
+              if (subLayer.eachLayer) {
+                subLayer.eachLayer((featLayer) => {
+                  if (!window.currentGeActiveFeature && featLayer.feature) {
+                    showGoogleEarthInspector(featLayer.feature, entry.di, featLayer);
+                  }
+                });
+              } else if (!window.currentGeActiveFeature && subLayer.feature) {
+                showGoogleEarthInspector(subLayer.feature, entry.di, subLayer);
+              }
+            });
           }
-        });
+        }
       }
     });
   }
@@ -1029,6 +1068,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (emptyContainer) emptyContainer.style.display = 'block';
 
     clearAllHighlightedDis();
+    clearAsetTanahTarget();
     showToast('Pilihan Dibatalkan', 'Titik target dan analisis proksimitas telah dibersihkan.');
   }
   window.clearTargetPinpoint = clearTargetPinpoint;
@@ -1172,6 +1212,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Hitung & Rekomendasikan Sungai Terdekat (Orde 1-8) On-Demand
     findNearbyRiversAndRecommend(lat, lon);
+
+    // Tampilkan Poligon Aset Tanah Terdekat On-Demand (Bebas Lag)
+    updateAsetTanahForTarget(lat, lon);
   }
 
   function renderNearestList(nearestItems) {
@@ -1598,15 +1641,29 @@ document.addEventListener('DOMContentLoaded', () => {
     renderOrde1Rivers();
   }
 
-  // --- FEATURE: ASET TANAH & SEMPADAN (STRESS TEST 1.800 POLIGON 18 KATEGORI) ---
+  // --- FEATURE: ASET TANAH & SEMPADAN (STRESS TEST 1.800 POLIGON 18 KATEGORI - ON DEMAND BEBAS LAG) ---
   let asetTanahLayer = null;
-  let isAsetTanahVisible = true;
+  let isAsetTanahVisible = false; // AWALNYA NONAKTIF AGAR TIDAK MEMBUAT LAG
   let activeAsetTanahCategory = 'ALL';
   let asetTanahDataCache = null;
+  let currentTargetCoord = null;
+  let currentNearbyAsetCount = 0;
 
-  function renderAsetTanahFeatures(fc) {
+  function getAsetFeatureCenter(f) {
+    if (f._center) return f._center;
+    const coords = f.geometry && f.geometry.coordinates && f.geometry.coordinates[0];
+    if (!coords || coords.length === 0) return { lat: 0, lon: 0 };
+    let sumLat = 0, sumLon = 0;
+    for (let i = 0; i < coords.length; i++) {
+      sumLon += coords[i][0];
+      sumLat += coords[i][1];
+    }
+    f._center = { lat: sumLat / coords.length, lon: sumLon / coords.length };
+    return f._center;
+  }
+
+  function renderAsetTanahFeatures(fc, shouldAddToMap = true) {
     if (!fc || !fc.features) return;
-    asetTanahDataCache = fc;
 
     if (asetTanahLayer) {
       map.removeLayer(asetTanahLayer);
@@ -1624,7 +1681,6 @@ document.addEventListener('DOMContentLoaded', () => {
       pane: 'asetTanahPane',
       renderer: asetCanvasRenderer,
       filter: function(feat) {
-        if (!isAsetTanahVisible) return false;
         if (activeAsetTanahCategory === 'ALL') return true;
         const p = feat.properties || {};
         return p.kategori === activeAsetTanahCategory;
@@ -1633,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const p = feat.properties || {};
         return {
           fillColor: p.fillColor || '#f97316',
-          fillOpacity: p.is_bekas ? 0.32 : 0.48,
+          fillOpacity: p.is_bekas ? 0.35 : 0.50,
           color: p.color || '#ea580c',
           weight: p.is_bekas ? 1.8 : 2.4,
           dashArray: p.dashArray || null,
@@ -1646,11 +1702,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const title = p.nama_aset || 'Aset Tanah Sempadan';
         const badgeColor = p.fillColor || '#f97316';
 
-        // Simpan style asli untuk mouseout
         if (layer.options) {
           layer._originalStyle = {
             fillColor: p.fillColor || '#f97316',
-            fillOpacity: p.is_bekas ? 0.32 : 0.48,
+            fillOpacity: p.is_bekas ? 0.35 : 0.50,
             color: p.color || '#ea580c',
             weight: p.is_bekas ? 1.8 : 2.4,
             dashArray: p.dashArray || null
@@ -1692,7 +1747,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if (layer.setStyle && layer !== selectedVectorLayer) {
             layer.setStyle(layer._originalStyle || {
               fillColor: p.fillColor || '#f97316',
-              fillOpacity: p.is_bekas ? 0.32 : 0.48,
+              fillOpacity: p.is_bekas ? 0.35 : 0.50,
               color: p.color || '#ea580c',
               weight: p.is_bekas ? 1.8 : 2.4,
               dashArray: p.dashArray || null
@@ -1702,7 +1757,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    if (isAsetTanahVisible) {
+    if (shouldAddToMap && isAsetTanahVisible) {
       asetTanahLayer.addTo(map);
     }
   }
@@ -1710,32 +1765,140 @@ document.addEventListener('DOMContentLoaded', () => {
   function initAsetTanah() {
     initRiverPanes();
 
+    // Cache data latar belakang saja, TIDAK MEMUNCULKAN 1.800 POLIGON DI AWAL (AGAR BEBAS LAG)
     if (window.ASET_TANAH_DATA && window.ASET_TANAH_DATA.features) {
-      renderAsetTanahFeatures(window.ASET_TANAH_DATA);
+      asetTanahDataCache = window.ASET_TANAH_DATA;
     } else {
       fetch('data/aset_tanah.json')
         .then(res => res.json())
         .then(data => {
           window.ASET_TANAH_DATA = data;
-          renderAsetTanahFeatures(data);
+          asetTanahDataCache = data;
         })
         .catch(err => console.warn('Gagal memuat data aset tanah:', err));
     }
+
+    // Pastikan status awal tombol & toggle di UI dalam keadaan Standby
+    isAsetTanahVisible = false;
+    const btnToggleAsetTanah = document.getElementById('btnToggleAsetTanah');
+    const badgeAsetTanahNav = document.getElementById('badgeAsetTanahNav');
+    const chkLayerAsetTanah = document.getElementById('chkLayerAsetTanah');
+    const filterRowAsetTanah = document.getElementById('filterRowAsetTanah');
+    if (btnToggleAsetTanah) btnToggleAsetTanah.classList.remove('active');
+    if (badgeAsetTanahNav) badgeAsetTanahNav.textContent = 'Standby';
+    if (chkLayerAsetTanah) chkLayerAsetTanah.checked = false;
+    if (filterRowAsetTanah) filterRowAsetTanah.classList.remove('active');
+    updateLayerCounter();
+  }
+
+  // TAMPILKAN POLIGON ASET TANAH TERDEKAT SAAT TITIK KOORDINAT DIPILIH
+  function updateAsetTanahForTarget(targetLat, targetLon) {
+    currentTargetCoord = { lat: targetLat, lon: targetLon };
+
+    const data = asetTanahDataCache || window.ASET_TANAH_DATA;
+    if (!data || !data.features || data.features.length === 0) return;
+
+    // Hitung jarak ke setiap poligon dari titik koordinat terpilih
+    const evaluated = data.features.map(f => {
+      const center = getAsetFeatureCenter(f);
+      const distKm = calculateDistanceKm(targetLat, targetLon, center.lat, center.lon);
+      return { feature: f, distKm };
+    });
+
+    // Urutkan jarak naik
+    evaluated.sort((a, b) => a.distKm - b.distKm);
+
+    // Filter kategori jika sedang dipilih
+    let filtered = evaluated;
+    if (activeAsetTanahCategory !== 'ALL') {
+      filtered = evaluated.filter(item => {
+        const p = item.feature.properties || {};
+        return p.kategori === activeAsetTanahCategory;
+      });
+    }
+
+    // Ambil subset sekitar titik: radius 25 km, atau top 30 terdekat (maks 40)
+    let selected = filtered.filter(item => item.distKm <= 25.0);
+    if (selected.length < 15) {
+      selected = filtered.slice(0, 25);
+    } else if (selected.length > 40) {
+      selected = selected.slice(0, 40);
+    }
+
+    currentNearbyAsetCount = selected.length;
+    isAsetTanahVisible = true;
+
+    const subsetFc = {
+      type: "FeatureCollection",
+      features: selected.map(s => s.feature)
+    };
+
+    renderAsetTanahFeatures(subsetFc, true);
+
+    const btnToggleAsetTanah = document.getElementById('btnToggleAsetTanah');
+    const badgeAsetTanahNav = document.getElementById('badgeAsetTanahNav');
+    const chkLayerAsetTanah = document.getElementById('chkLayerAsetTanah');
+    const filterRowAsetTanah = document.getElementById('filterRowAsetTanah');
+
+    if (btnToggleAsetTanah) btnToggleAsetTanah.classList.add('active');
+    if (badgeAsetTanahNav) badgeAsetTanahNav.textContent = `${currentNearbyAsetCount}`;
+    if (chkLayerAsetTanah) chkLayerAsetTanah.checked = true;
+    if (filterRowAsetTanah) filterRowAsetTanah.classList.add('active');
+
+    updateLayerCounter();
+  }
+
+  // BERSIHKAN ASET TANAH SAAT PILIHAN KOORDINAT DIBATALKAN
+  function clearAsetTanahTarget() {
+    currentTargetCoord = null;
+    currentNearbyAsetCount = 0;
+    isAsetTanahVisible = false;
+
+    if (asetTanahLayer) {
+      map.removeLayer(asetTanahLayer);
+      asetTanahLayer = null;
+    }
+
+    const btnToggleAsetTanah = document.getElementById('btnToggleAsetTanah');
+    const badgeAsetTanahNav = document.getElementById('badgeAsetTanahNav');
+    const chkLayerAsetTanah = document.getElementById('chkLayerAsetTanah');
+    const filterRowAsetTanah = document.getElementById('filterRowAsetTanah');
+
+    if (btnToggleAsetTanah) btnToggleAsetTanah.classList.remove('active');
+    if (badgeAsetTanahNav) badgeAsetTanahNav.textContent = 'Standby';
+    if (chkLayerAsetTanah) chkLayerAsetTanah.checked = false;
+    if (filterRowAsetTanah) filterRowAsetTanah.classList.remove('active');
+
+    updateLayerCounter();
   }
 
   function setAsetTanahCategoryFilter(cat) {
     activeAsetTanahCategory = cat;
-    if (asetTanahDataCache) {
-      renderAsetTanahFeatures(asetTanahDataCache);
-      const catCount = cat === 'ALL' ? asetTanahDataCache.features.length : asetTanahDataCache.features.filter(f => f.properties && f.properties.kategori === cat).length;
+    if (currentTargetCoord) {
+      updateAsetTanahForTarget(currentTargetCoord.lat, currentTargetCoord.lon);
       showToast(
         'Filter Kategori Aset',
-        `Menampilkan <strong>${catCount} poligon</strong> kategori <strong>${cat === 'ALL' ? 'Semua Kategori' : cat}</strong>.`
+        `Menampilkan poligon kategori <strong>${cat === 'ALL' ? 'Semua Kategori' : cat}</strong> di sekitar koordinat.`
+      );
+    } else {
+      showToast(
+        'Kategori Aset Terpilih',
+        `Kategori <strong>${cat === 'ALL' ? 'Semua Kategori' : cat}</strong> aktif saat titik koordinat dipilih di peta.`
       );
     }
   }
 
   function setAsetTanahVisibility(visible) {
+    if (!currentTargetCoord && visible) {
+      showToast(
+        'Pilih Koordinat Terlebih Dahulu',
+        'Klik lokasi di peta atau gunakan GPS untuk memunculkan poligon aset tanah di area tersebut tanpa membuat lag.'
+      );
+      const chkLayerAsetTanah = document.getElementById('chkLayerAsetTanah');
+      if (chkLayerAsetTanah) chkLayerAsetTanah.checked = false;
+      return;
+    }
+
     isAsetTanahVisible = visible;
     if (asetTanahLayer) {
       if (isAsetTanahVisible) {
@@ -1753,7 +1916,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLayerCounter();
     showToast(
       isAsetTanahVisible ? 'Layer Aset Tanah Aktif' : 'Layer Aset Tanah Disembunyikan',
-      isAsetTanahVisible ? '1.800 Poligon tanah sempadan & aset pemerintah ditampilkan.' : 'Poligon aset tanah disembunyikan.'
+      isAsetTanahVisible ? `Menampilkan ${currentNearbyAsetCount} poligon aset tanah sempadan di sekitar titik terpilih.` : 'Poligon aset tanah disembunyikan.'
     );
   }
 
@@ -1862,6 +2025,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = p.Sungai ? `Sungai ${p.Sungai}` : 'Alur Sungai Utama';
     const pKm = p.Panjang_km ? `${p.Panjang_km} km` : '';
 
+    if (layer.options) {
+      layer._originalStyle = {
+        color: layer.options.color,
+        weight: layer.options.weight,
+        opacity: layer.options.opacity
+      };
+    }
+
     layer.bindTooltip(`
       <div style="font-family: Inter, sans-serif;">
         <span style="display: inline-block; background: ${p.casing_color || '#38bdf8'}; color: #070d1e; font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 3px; margin-bottom: 2px;">${p.ws_name || p.WS || 'Jawa Timur'}</span><br>
@@ -1873,6 +2044,22 @@ document.addEventListener('DOMContentLoaded', () => {
     layer.on('click', (e) => {
       L.DomEvent.stopPropagation(e);
       showGoogleEarthInspector(feat, null, layer);
+    });
+
+    layer.on('mouseover', () => {
+      if (layer.setStyle && layer !== selectedVectorLayer) {
+        layer.setStyle({ color: '#ffffff', weight: 4.5, opacity: 1.0 });
+      }
+    });
+
+    layer.on('mouseout', () => {
+      if (layer.setStyle && layer !== selectedVectorLayer) {
+        layer.setStyle(layer._originalStyle || {
+          color: p.core_color || '#1e40af',
+          weight: 2.2,
+          opacity: 1.0
+        });
+      }
     });
   }
 
