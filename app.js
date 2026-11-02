@@ -1145,6 +1145,18 @@ document.addEventListener('DOMContentLoaded', () => {
     pinpointHistory = [];
     isTargetLocked = false;
 
+    const targetHud = document.getElementById('floatingTargetHudContainer');
+    if (targetHud) {
+      targetHud.classList.add('hidden');
+      targetHud.style.display = 'none';
+    }
+
+    const riverBadge = document.getElementById('floatingRiverProximityBadge');
+    if (riverBadge) {
+      riverBadge.classList.add('hidden');
+      riverBadge.style.display = 'none';
+    }
+
     const floatingBar = document.getElementById('floatingClearSelectionBar');
     if (floatingBar) {
       floatingBar.classList.add('hidden');
@@ -1272,15 +1284,28 @@ document.addEventListener('DOMContentLoaded', () => {
       btnClearTarget.style.display = 'inline-flex';
     }
 
-    // Reveal Floating Clear Selection Bar on Map (Posisinya di bawah agar tidak menutupi banner DI)
+    // Reveal Floating Target HUD Bar on Map (Posisinya di bawah agar tidak menutupi banner DI)
+    const targetHud = document.getElementById('floatingTargetHudContainer');
     const floatingBar = document.getElementById('floatingClearSelectionBar');
     const floatingCoordVal = document.getElementById('floatingCoordVal');
+    if (targetHud) {
+      targetHud.classList.remove('hidden');
+      targetHud.style.display = 'flex';
+    }
     if (floatingBar) {
       floatingBar.classList.remove('hidden');
       floatingBar.style.display = 'flex';
       if (floatingCoordVal) {
         floatingCoordVal.textContent = `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
       }
+    }
+
+    const riverBadge = document.getElementById('floatingRiverProximityBadge');
+    const riverText = document.getElementById('floatingRiverProximityText');
+    if (riverBadge && riverText) {
+      riverBadge.classList.remove('hidden');
+      riverBadge.style.display = 'inline-flex';
+      riverText.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="margin-right: 5px; color: #38bdf8;"></i> Menganalisis sungai terdekat...`;
     }
 
     // REVISI POINT 1: HITUNG JARAK VEKTOR TERDEKAT (TEPI LINE / POLIGON) UNTUK DI
@@ -2493,7 +2518,31 @@ document.addEventListener('DOMContentLoaded', () => {
       activeRecommendedRivers = topRecommended;
       renderRecommendedRiversUI(topRecommended, targetLat, targetLon);
       renderRecommendedRiversOnMap(topRecommended, targetLat, targetLon);
+
+      // REVISI 1: TAMPILKAN PROKSIMITAS SUNGAI DI BILAH BAWAH (TEPAT DI ATAS TARGET BAR)
+      if (topRecommended.length > 0) {
+        const topRiver = topRecommended[0];
+        const rName = topRiver.properties.Sungai ? `Sungai ${topRiver.properties.Sungai}` : 'Alur Sungai Terdekat';
+        const dStr = topRiver.distanceM < 1000 ? `${topRiver.distanceM} m` : `${topRiver.distanceKm.toFixed(2)} km`;
+        updateFloatingRiverProximityBadge(dStr, rName);
+      } else {
+        const rBadge = document.getElementById('floatingRiverProximityBadge');
+        if (rBadge) {
+          rBadge.classList.add('hidden');
+          rBadge.style.display = 'none';
+        }
+      }
     });
+  }
+
+  function updateFloatingRiverProximityBadge(distStr, riverName) {
+    const riverBadge = document.getElementById('floatingRiverProximityBadge');
+    const riverText = document.getElementById('floatingRiverProximityText');
+    if (riverBadge && riverText) {
+      riverText.innerHTML = `<span style="color: #38bdf8; font-weight: 700;"><i class="fa-solid fa-ruler" style="margin-right: 5px;"></i>${distStr}</span> ke <strong style="color: #ffffff;">${riverName}</strong>`;
+      riverBadge.classList.remove('hidden');
+      riverBadge.style.display = 'inline-flex';
+    }
   }
 
   function renderRecommendedRiversUI(rivers, targetLat, targetLon) {
@@ -2635,7 +2684,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-family: Inter, sans-serif; font-size: 0.72rem; font-weight: 700; color: #38bdf8;">
             <i class="fa-solid fa-ruler"></i> ${distStr} ke ${p.Sungai ? 'Sungai ' + p.Sungai : 'Sungai'}
           </div>
-        `, { permanent: index === 0, direction: 'center', className: 'ge-map-tooltip' });
+        `, { sticky: true, className: 'ge-map-tooltip' });
 
         subGroup.addLayer(connector);
       }
