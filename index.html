@@ -90,16 +90,51 @@
       <!-- LEAFLET MAP CONTAINER -->
       <div id="map"></div>
 
-      <!-- FLOATING CLEAR SELECTION BAR (KEMUDAHAN MEMBATALKAN TITIK PILIHAN) -->
+      <!-- FLOATING SIDEBAR TOGGLE BUTTON (FORMAT UTAMA SEMBUNYI PADA HP / PETA BERSIH) -->
+      <button id="btnFloatingSidebarToggle" class="btn-floating-sidebar" title="Buka Panel Informasi & Analisis Spasial">
+        <i class="fa-solid fa-compass"></i>
+        <span>Panel Informasi</span>
+      </button>
+
+      <!-- MOBILE RETICLE TARGETING FAB (GOOGLE EARTH MOBILE PATTERN) -->
+      <div id="mobileReticleControls" class="mobile-reticle-wrap">
+        <button id="btnCenterReticle" class="btn-reticle-fab" title="Tandai Titik di Pusat Layar (Metode Presisi Tanpa Miss-Click)">
+          <i class="fa-solid fa-crosshairs"></i>
+          <span>Bidik Pusat Peta</span>
+        </button>
+      </div>
+
+      <!-- CENTER SCREEN CROSSHAIR (Penunjuk visual tengah layar ala Google Earth) -->
+      <div id="centerScreenReticle" class="center-screen-crosshair">
+        <div class="reticle-ring"></div>
+        <div class="reticle-dot"></div>
+      </div>
+
+      <!-- FLOATING CLEAR SELECTION & TARGET CONTROL BAR (GOOGLE EARTH STYLE) -->
       <div id="floatingClearSelectionBar" class="floating-clear-bar hidden">
         <div class="clear-bar-content">
           <span class="clear-bar-pulse"></span>
-          <span class="clear-bar-text"><i class="fa-solid fa-crosshairs"></i> Titik Target:</span>
+          <span class="clear-bar-text"><i class="fa-solid fa-crosshairs"></i> Target:</span>
           <span id="floatingCoordVal" class="floating-coord-val">-</span>
         </div>
-        <button id="btnFloatingClearSelection" class="btn-clear-selection-pill" title="Batalkan & Hapus Titik Pilihan (Tekan ESC)">
-          <i class="fa-solid fa-xmark"></i> Batal Pilihan
-        </button>
+        <div class="clear-bar-actions">
+          <!-- Button Kunci Target -->
+          <button id="btnLockTargetPin" class="btn-clear-pill-action" title="Kunci titik agar klik tidak sengaja tidak memindahkan target">
+            <i class="fa-solid fa-lock-open" id="iconLockTarget"></i> <span id="lblLockTarget">Kunci</span>
+          </button>
+          <!-- Button Undo / Urungkan -->
+          <button id="btnUndoPinpoint" class="btn-clear-pill-action hidden" title="Urungkan ke titik koordinat sebelumnya (Ctrl+Z)">
+            <i class="fa-solid fa-rotate-left"></i> <span>Urungkan</span>
+          </button>
+          <!-- Button Info 5 DI (Drawer Informasi Mobile) -->
+          <button id="btnOpenSidebarFromBar" class="btn-clear-pill-action" title="Buka Panel Informasi 5 DI Terdekat">
+            <i class="fa-solid fa-chart-simple"></i> <span>Info 5 DI</span>
+          </button>
+          <!-- Button Batal Pilihan -->
+          <button id="btnFloatingClearSelection" class="btn-clear-selection-pill" title="Batalkan & Hapus Titik Pilihan (Tekan ESC)">
+            <i class="fa-solid fa-xmark"></i> <span>Batal</span>
+          </button>
+        </div>
       </div>
 
       <!-- GOOGLE EARTH INSPECTOR CARD (PERSIS GAMBAR 3) -->
@@ -115,6 +150,7 @@
             </div>
           </div>
           <div class="ge-header-actions">
+            <button id="btnMinimizeGeInspector" class="ge-btn-icon" title="Perkecil/Perbesar Kartu"><i class="fa-solid fa-minus"></i></button>
             <button id="btnGeMenu" class="ge-btn-icon" title="Menu"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             <button id="btnCloseGeInspector" class="ge-btn-icon" title="Tutup"><i class="fa-solid fa-xmark"></i></button>
           </div>
@@ -209,15 +245,16 @@
         </button>
       </div>
 
-      <!-- FLOATING SEARCH BAR & PROXIMITY PANEL (GLASS PANEL) -->
-      <aside id="sidebar" class="sidebar">
+      <!-- FLOATING SEARCH BAR & PROXIMITY PANEL (DEFAULT: FORMAT SEMBUNYI / PETA BERSIH) -->
+      <aside id="sidebar" class="sidebar hidden">
         <div class="sidebar-header">
           <div class="sidebar-title">
             <i class="fa-solid fa-compass"></i>
             <h2>Pencarian & Analisis Spasial</h2>
           </div>
-          <button id="btnCloseSidebar" class="btn-close-sidebar">
-            <i class="fa-solid fa-xmark"></i>
+          <button id="btnCloseSidebar" class="btn-close-sidebar" title="Sembunyikan Panel Informasi">
+            <i class="fa-solid fa-eye-slash"></i>
+            <span>Sembunyikan</span>
           </button>
         </div>
 

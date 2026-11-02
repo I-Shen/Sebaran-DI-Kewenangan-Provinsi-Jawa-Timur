@@ -22,6 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
   let diMarkersMap = new Map();
   let currentHighlightLayer = null;
 
+  // GOOGLE EARTH MISS-CLICK MITIGATION & MOBILE STATE
+  const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.matchMedia('(pointer: coarse)').matches;
+  let isTargetLocked = false;
+  let pinpointHistory = []; // Stack for Undo (Ctrl+Z)
+  let currentPinpointCoord = null;
+
   // UPT Badge Color Config
   const UPT_CONFIG = {
     'Korwil Madiun': { color: '#3b82f6', badgeClass: 'badge-madiun', pin: '#60a5fa' },
@@ -72,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
       center: EAST_JAVA_CENTER,
       zoom: DEFAULT_ZOOM,
       zoomControl: false,
+      renderer: L.canvas({ tolerance: isTouchDevice ? 26 : 14 }), // Wide hit tolerance for vector lines/polygons
       layers: [basemapLayers['esri-satellite']]
     });
 
@@ -100,15 +107,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
     map.addLayer(markerClusterGroup);
 
-    // Click map to trigger pinpoint & proximity
+    // Click map to trigger pinpoint & proximity (Google Earth miss-click mitigation)
     map.on('click', (e) => {
-      setPinpointLocation(e.latlng.lat, e.latlng.lng, 'Titik Klik di Peta');
+      if (isTargetLocked) {
+        showToast('Target Terkunci', 'Buka kunci target di bilah bawah untuk memindahkan titik.');
+        return;
+      }
+      // Pada perangkat sentuh (HP), abaikan klik tunggal di peta kosong agar tidak miss-click saat geser/zoom.
+      // Pengguna HP menggunakan Sentuhan Tahan (Long-Press 0.5s) atau tombol "Bidik Pusat Peta"!
+      if (isTouchDevice) {
+        return;
+      }
+      setPinpointLocation(e.latlng.lat, e.latlng.lng, 'Titik Klik di Peta', true, true);
     });
+
+    // Pasang gestur Google Earth Mobile Long-Press (Sentuhan Tahan)
+    setupMapLongPressGesture();
 
     // Inisialisasi Custom Panes, Batas WS (Poligon & Notasi) & Sungai Orde 1-2
     initWsAndRivers();
     // Inisialisasi Layer Aset Tanah & Sempadan (Stress Test 1.800 Poligon)
     initAsetTanah();
+  }
+
+  // GOOGLE EARTH MOBILE GESTURE: LONG-PRESS (TAHAN 480ms) TO DROP PINPOINT
+  function setupMapLongPressGesture() {
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) return;
+
+    let touchTimer = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    mapContainer.addEventListener('touchstart', (e) => {
+      // Pinch-zoom multitouch atau target terkunci: batalkan long-press seketika
+      if (e.touches.length > 1 || isTargetLocked) {
+        if (touchTimer) clearTimeout(touchTimer);
+        return;
+      }
+
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+
+      touchTimer = setTimeout(() => {
+        // Konversi koordinat layar sentuh ke lat/lng peta Leaflet
+        const rect = mapContainer.getBoundingClientRect();
+        const containerPt = L.point(touchStartX - rect.left, touchStartY - rect.top);
+        const latlng = map.containerPointToLatLng(containerPt);
+
+        // Haptic feedback getaran lembut (seperti Google Earth mobile)
+        if (navigator.vibrate) {
+          try { navigator.vibrate(35); } catch (_) {}
+        }
+
+        setPinpointLocation(latlng.lat, latlng.lng, 'Sentuhan Tahan (HP)', true, true);
+        showToast('Titik Ditempatkan', 'Target dipilih via sentuhan tahan (Google Earth pattern).');
+      }, 480);
+    }, { passive: true });
+
+    mapContainer.addEventListener('touchmove', (e) => {
+      if (!touchTimer) return;
+      if (e.touches.length > 1) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+        return;
+      }
+      const touch = e.touches[0];
+      const dx = Math.abs(touch.clientX - touchStartX);
+      const dy = Math.abs(touch.clientY - touchStartY);
+      // Jika jari bergeser > 8px, berarti pengguna sedang menggeser/navigasi peta: batalkan drop pin!
+      if (dx > 8 || dy > 8) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+      }
+    }, { passive: true });
+
+    mapContainer.addEventListener('touchend', () => {
+      if (touchTimer) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+      }
+    }, { passive: true });
+
+    mapContainer.addEventListener('touchcancel', () => {
+      if (touchTimer) {
+        clearTimeout(touchTimer);
+        touchTimer = null;
+      }
+    }, { passive: true });
   }
 
   // GOOGLE EARTH ICON CONFIGURATION WITH RANK COLOR ANCHOR RING
@@ -779,6 +866,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const btnMinimizeGeInspector = document.getElementById('btnMinimizeGeInspector');
+  if (btnMinimizeGeInspector) {
+    btnMinimizeGeInspector.addEventListener('click', () => {
+      const inspector = document.getElementById('googleEarthInspector');
+      if (inspector) {
+        inspector.classList.toggle('minimized');
+        const icon = btnMinimizeGeInspector.querySelector('i');
+        if (icon) {
+          if (inspector.classList.contains('minimized')) {
+            icon.className = 'fa-solid fa-chevron-up';
+            btnMinimizeGeInspector.title = 'Perluas Panel';
+          } else {
+            icon.className = 'fa-solid fa-chevron-down';
+            btnMinimizeGeInspector.title = 'Perkecil Panel';
+          }
+        }
+      }
+    });
+  }
+
   document.getElementById('btnGeMenu').addEventListener('click', () => {
     showToast('Menu Objek', 'Objek tersinkronisasi dengan Database Dinas PUSDA Provinsi Jawa Timur.');
   });
@@ -1034,6 +1141,10 @@ document.addEventListener('DOMContentLoaded', () => {
     recommendedLayerEntries.clear();
     activeRecommendedRivers = [];
 
+    currentPinpointCoord = null;
+    pinpointHistory = [];
+    isTargetLocked = false;
+
     const floatingBar = document.getElementById('floatingClearSelectionBar');
     if (floatingBar) {
       floatingBar.classList.add('hidden');
@@ -1042,6 +1153,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingCoordVal = document.getElementById('floatingCoordVal');
     if (floatingCoordVal) {
       floatingCoordVal.textContent = '-';
+    }
+
+    const btnUndo = document.getElementById('btnUndoPinpoint');
+    if (btnUndo) btnUndo.classList.add('hidden');
+
+    const btnLock = document.getElementById('btnLockTargetPin');
+    if (btnLock) {
+      btnLock.classList.remove('locked');
+      const icon = btnLock.querySelector('i');
+      const text = document.getElementById('lblLockTarget');
+      if (icon) icon.className = 'fa-solid fa-lock-open';
+      if (text) text.textContent = 'Kunci';
     }
 
     const btnClearTarget = document.getElementById('btnClearTargetPin');
@@ -1073,7 +1196,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.clearTargetPinpoint = clearTargetPinpoint;
 
-  function setPinpointLocation(lat, lon, sourceLabel = 'Titik Lokasi') {
+  function setPinpointLocation(lat, lon, sourceLabel = 'Titik Lokasi', autoFly = true, pushToHistory = true) {
+    // Catat ke riwayat undo jika pushToHistory true dan sudah ada koordinat aktif sebelumnya
+    if (pushToHistory && currentPinpointCoord) {
+      pinpointHistory.push({
+        lat: currentPinpointCoord.lat,
+        lon: currentPinpointCoord.lon,
+        sourceLabel: currentPinpointCoord.sourceLabel
+      });
+      if (pinpointHistory.length > 10) pinpointHistory.shift();
+      const btnUndo = document.getElementById('btnUndoPinpoint');
+      if (btnUndo) btnUndo.classList.remove('hidden');
+    }
+    currentPinpointCoord = { lat, lon, sourceLabel };
+
     // Clean previous pinpoint and polylines
     if (activePinpointMarker) {
       map.removeLayer(activePinpointMarker);
@@ -1092,10 +1228,24 @@ document.addEventListener('DOMContentLoaded', () => {
       iconAnchor: [12, 12]
     });
 
+    // GOOGLE EARTH PC PATTERN: Draggable Marker untuk fine-tuning posisi tanpa miss-click
     activePinpointMarker = L.marker([lat, lon], {
       icon: radarIcon,
-      zIndexOffset: 1000
+      zIndexOffset: 1000,
+      draggable: !isTargetLocked
     }).addTo(map);
+
+    // Draggable precision event
+    activePinpointMarker.on('dragstart', () => {
+      activePinpointMarker.closePopup();
+    });
+
+    activePinpointMarker.on('dragend', (e) => {
+      if (isTargetLocked) return;
+      const p = e.target.getLatLng();
+      // Perbarui posisi target secara gentle tanpa merusak zoom / orientasi kamera
+      setPinpointLocation(p.lat, p.lng, 'Titik Digeser', false, true);
+    });
 
     // REVISI POINT 3 & 4: POPUP MINI COMPACT, MUNCUL DI BAWAH TITIK, HANYA 1 FORMAT DESIMAL
     activePinpointMarker.bindPopup(`
@@ -1114,7 +1264,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }).openPopup();
 
     // Update Coordinate Badge & Reveal Clear Button in Sidebar
-    document.getElementById('pinpointCoordBadge').textContent = `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
+    const coordBadge = document.getElementById('pinpointCoordBadge');
+    if (coordBadge) coordBadge.textContent = `${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
     const btnClearTarget = document.getElementById('btnClearTargetPin');
     if (btnClearTarget) {
       btnClearTarget.classList.remove('hidden');
@@ -1204,10 +1355,48 @@ document.addEventListener('DOMContentLoaded', () => {
         );
       }
 
-      // Fly to bounds
-      const fitTarget = nearest5[0].closestPoint ? [nearest5[0].closestPoint.lat, nearest5[0].closestPoint.lon] : [nearest5[0].lat, nearest5[0].lon];
-      const fitBounds = L.latLngBounds([[lat, lon], fitTarget]);
-      map.flyToBounds(fitBounds, { padding: [60, 60], maxZoom: 14, duration: 1 });
+      // =========================================================================
+      // NON-DESTRUCTIVE GENTLE CAMERA (OPTIMASI PENGAMATAN SPASIAL TANPA DISORIENTASI)
+      // =========================================================================
+      if (autoFly) {
+        const currentBounds = map.getBounds();
+        const isTargetInView = currentBounds.contains([lat, lon]);
+        const fitTarget = nearest5[0].closestPoint 
+          ? [nearest5[0].closestPoint.lat, nearest5[0].closestPoint.lon] 
+          : [nearest5[0].lat, nearest5[0].lon];
+        const isNearestInView = currentBounds.contains(fitTarget);
+
+        if (isTargetInView && isNearestInView) {
+          // Kasus 1: Kedua titik (target & DI terdekat) sudah ada di layar pengguna
+          // JANGAN ubah zoom! Cukup geser halus (gentle pan) agar user tidak kehilangan konteks
+          map.panTo([lat, lon], {
+            animate: true,
+            duration: 0.6,
+            easeLinearity: 0.25
+          });
+        } else if (isTargetInView && map.getZoom() >= 13) {
+          // Kasus 2: Pengguna sedang zoom dekat memeriksa alur saluran / petak sawah / aset tanah
+          // Pertahankan zoom pengguna, lakukan gentle pan ke titik target
+          map.panTo([lat, lon], {
+            animate: true,
+            duration: 0.5
+          });
+        } else {
+          // Kasus 3: Target baru atau berada di luar viewport layar
+          const fitBounds = L.latLngBounds([[lat, lon], fitTarget]);
+          map.flyToBounds(fitBounds, {
+            padding: isTouchDevice ? [40, 40] : [70, 70],
+            maxZoom: 14,
+            duration: 0.9
+          });
+        }
+      } else {
+        // Jika autoFly false (misal dari dragend marker), jangan ubah zoom sama sekali
+        const currentBounds = map.getBounds();
+        if (!currentBounds.contains([lat, lon])) {
+          map.panTo([lat, lon], { animate: true, duration: 0.4 });
+        }
+      }
     });
 
     // Hitung & Rekomendasikan Sungai Terdekat (Orde 1-8) On-Demand
@@ -1466,13 +1655,131 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 13. SIDEBAR TOGGLE & RESET VIEW
+  // 13. SIDEBAR TOGGLE, RETICLE FAB, LOCK & RESET VIEW
   const sidebar = document.getElementById('sidebar');
-  document.getElementById('btnToggleSidebar').addEventListener('click', () => {
-    sidebar.classList.toggle('hidden');
-  });
-  document.getElementById('btnCloseSidebar').addEventListener('click', () => {
-    sidebar.classList.add('hidden');
+  const btnFloatingSidebarToggle = document.getElementById('btnFloatingSidebarToggle');
+  const btnToggleSidebar = document.getElementById('btnToggleSidebar');
+  const btnCloseSidebar = document.getElementById('btnCloseSidebar');
+  const btnOpenSidebarFromBar = document.getElementById('btnOpenSidebarFromBar');
+
+  function syncSidebarVisibility(shouldOpen) {
+    if (shouldOpen) {
+      sidebar.classList.remove('hidden');
+      if (btnFloatingSidebarToggle) btnFloatingSidebarToggle.classList.add('hidden');
+    } else {
+      sidebar.classList.add('hidden');
+      if (btnFloatingSidebarToggle) btnFloatingSidebarToggle.classList.remove('hidden');
+    }
+  }
+
+  if (btnFloatingSidebarToggle) {
+    btnFloatingSidebarToggle.addEventListener('click', () => {
+      syncSidebarVisibility(true);
+    });
+  }
+
+  if (btnToggleSidebar) {
+    btnToggleSidebar.addEventListener('click', () => {
+      const isCurrentlyHidden = sidebar.classList.contains('hidden');
+      syncSidebarVisibility(isCurrentlyHidden);
+    });
+  }
+
+  if (btnCloseSidebar) {
+    btnCloseSidebar.addEventListener('click', () => {
+      syncSidebarVisibility(false);
+    });
+  }
+
+  if (btnOpenSidebarFromBar) {
+    btnOpenSidebarFromBar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      syncSidebarVisibility(true);
+    });
+  }
+
+  // GOOGLE EARTH RETICLE MODE: FAB "BIDIK PUSAT PETA"
+  const btnCenterReticle = document.getElementById('btnCenterReticle');
+  if (btnCenterReticle) {
+    btnCenterReticle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (isTargetLocked) {
+        showToast('Target Terkunci', 'Buka kunci target di bilah bawah untuk memindahkan titik.');
+        return;
+      }
+      const center = map.getCenter();
+      setPinpointLocation(center.lat, center.lng, 'Pusat Layar (Bidik Presisi)', true, true);
+      if (navigator.vibrate) {
+        try { navigator.vibrate(35); } catch (_) {}
+      }
+      showToast('Pusat Peta Dibidik', 'Titik target presisi ditempatkan pada pusat viewport peta.');
+    });
+  }
+
+  // TARGET LOCK TOGGLE (Mencegah Klik Tak Sengaja)
+  const btnLockTargetPin = document.getElementById('btnLockTargetPin');
+  if (btnLockTargetPin) {
+    btnLockTargetPin.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isTargetLocked = !isTargetLocked;
+      if (activePinpointMarker && activePinpointMarker.dragging) {
+        if (isTargetLocked) {
+          activePinpointMarker.dragging.disable();
+        } else {
+          activePinpointMarker.dragging.enable();
+        }
+      }
+      btnLockTargetPin.classList.toggle('locked', isTargetLocked);
+      const icon = document.getElementById('iconLockTarget') || btnLockTargetPin.querySelector('i');
+      const text = document.getElementById('lblLockTarget') || btnLockTargetPin.querySelector('.btn-text');
+      if (isTargetLocked) {
+        if (icon) icon.className = 'fa-solid fa-lock';
+        if (text) text.textContent = 'Terkunci';
+        showToast('Target Dikunci', 'Titik target diproteksi dari klik atau sentuhan tak sengaja.');
+      } else {
+        if (icon) icon.className = 'fa-solid fa-lock-open';
+        if (text) text.textContent = 'Kunci';
+        showToast('Kunci Dibuka', 'Titik target dapat dipindahkan atau digeser kembali.');
+      }
+    });
+  }
+
+  // UNDO PINPOINT FUNCTION (Ctrl+Z & Button)
+  function undoPinpoint() {
+    if (isTargetLocked) {
+      showToast('Target Terkunci', 'Buka kunci target terlebih dahulu untuk mengurungkan titik.');
+      return;
+    }
+    if (pinpointHistory.length === 0) {
+      showToast('Tidak Ada Riwayat', 'Tidak ada titik koordinat sebelumnya untuk diurungkan.');
+      return;
+    }
+    const prev = pinpointHistory.pop();
+    if (pinpointHistory.length === 0) {
+      const btnUndo = document.getElementById('btnUndoPinpoint');
+      if (btnUndo) btnUndo.classList.add('hidden');
+    }
+    setPinpointLocation(prev.lat, prev.lon, prev.sourceLabel || 'Riwayat Sebelumnya', true, false);
+    showToast('Undo Berhasil', `Target dikembalikan ke (${prev.lat.toFixed(4)}°, ${prev.lon.toFixed(4)}°).`);
+  }
+  window.undoPinpoint = undoPinpoint;
+
+  const btnUndoPinpoint = document.getElementById('btnUndoPinpoint');
+  if (btnUndoPinpoint) {
+    btnUndoPinpoint.addEventListener('click', (e) => {
+      e.stopPropagation();
+      undoPinpoint();
+    });
+  }
+
+  // Keyboard shortcut Ctrl+Z untuk Undo
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+      if (pinpointHistory.length > 0) {
+        e.preventDefault();
+        undoPinpoint();
+      }
+    }
   });
 
   document.getElementById('btnResetView').addEventListener('click', () => {
