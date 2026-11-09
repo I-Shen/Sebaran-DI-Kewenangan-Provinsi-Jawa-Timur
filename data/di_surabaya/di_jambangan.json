@@ -1,0 +1,185 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            112.711291,
+            -7.319099,
+            37.300003
+          ],
+          [
+            112.711316,
+            -7.319099,
+            0
+          ],
+          [
+            112.711418,
+            -7.319089,
+            37.300003
+          ],
+          [
+            112.711496,
+            -7.31906,
+            0
+          ],
+          [
+            112.711618,
+            -7.319005,
+            37.300003
+          ],
+          [
+            112.711742,
+            -7.31895,
+            37.300003
+          ],
+          [
+            112.711775,
+            -7.318937,
+            37.300003
+          ],
+          [
+            112.711955,
+            -7.318952,
+            0
+          ],
+          [
+            112.712117,
+            -7.318958,
+            36.700001
+          ],
+          [
+            112.712302,
+            -7.318976,
+            0
+          ],
+          [
+            112.712514,
+            -7.318992,
+            36.700001
+          ],
+          [
+            112.71295,
+            -7.319027,
+            0
+          ],
+          [
+            112.713252,
+            -7.319053,
+            37
+          ],
+          [
+            112.713245,
+            -7.31905,
+            37
+          ]
+        ]
+      },
+      "properties": {
+        "id_di": "53911",
+        "k_di": "35003013",
+        "n_di": "JAMBANGAN",
+        "nama": "Saluran Sekunder Jambangan",
+        "nomenklatur": "R.JBG.1",
+        "k_aset": "S02",
+        "n_aset": "Saluran Sekunder",
+        "panjang_saluran": "226.45298966689862",
+        "luas_layanan": "0",
+        "norec": "1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.711302,
+          -7.319103
+        ]
+      },
+      "properties": {
+        "id_di": "53911",
+        "k_di": "35003013",
+        "n_di": "JAMBANGAN",
+        "nama": "Pintu Jambangan",
+        "nomenklatur": "B.JBG.0",
+        "k_aset": "B50",
+        "n_aset": "Bangunan Pintu",
+        "norec": "1",
+        "norec_saluran": "1",
+        "saluran": "Saluran Sekunder Jambangan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.711754,
+          -7.318932
+        ]
+      },
+      "properties": {
+        "id_di": "53911",
+        "k_di": "35003013",
+        "n_di": "JAMBANGAN",
+        "nama": "Jembatan B.JBG.1a",
+        "nomenklatur": "B.JBG.1a",
+        "k_aset": "C06",
+        "n_aset": "Jembatan",
+        "norec": "2",
+        "norec_saluran": "1",
+        "saluran": "Saluran Sekunder Jambangan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.713245,
+          -7.31905,
+          37
+        ]
+      },
+      "properties": {
+        "id_di": "53911",
+        "k_di": "35003013",
+        "n_di": "JAMBANGAN",
+        "nama": "Akhir Saluran Sekunder",
+        "nomenklatur": "A.S.S",
+        "k_aset": "P99",
+        "n_aset": "Ujung Saluran (Tanpa Bangunan)",
+        "norec": "4",
+        "norec_saluran": "1",
+        "saluran": "Saluran Sekunder Jambangan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          112.712514,
+          -7.318993,
+          36.700001
+        ]
+      },
+      "properties": {
+        "id_di": "53911",
+        "k_di": "35003013",
+        "n_di": "JAMBANGAN",
+        "nama": "Jembatan B.JGB.1b",
+        "nomenklatur": "B.JGB.1b",
+        "k_aset": "C06",
+        "n_aset": "Jembatan",
+        "norec": "3",
+        "norec_saluran": "1",
+        "saluran": "Saluran Sekunder Jambangan"
+      }
+    }
+  ]
+}

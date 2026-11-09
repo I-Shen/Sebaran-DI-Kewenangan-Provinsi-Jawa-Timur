@@ -819,17 +819,18 @@
     "id": 49,
     "nama_di": "DI Kaliboto",
     "upt": "Korwil Malang",
-    "lat": -8.046278,
-    "lon": 111.985757,
+    "lat": -8.046389,
+    "lon": 111.985769,
     "bounds": [
-      -8.055296,
-      111.978973,
+      -8.098025,
+      111.978995,
       -8.034049,
-      111.992836
+      112.16934
     ],
-    "total_titik": 977,
+    "total_titik": 1042,
     "files": [
-      "DI Kaliboto.kmz"
+      "DI Kaliboto.kmz",
+      "map_35000021_Kaliboto.json"
     ]
   },
   {
@@ -3099,6 +3100,125 @@
     "files": [
       "DI Warujinggo.kmz",
       "SOSIOHIDRO DI WARUJINGGO benar.kmz"
+    ]
+  },
+  {
+    "id": 182,
+    "nama_di": "DI Simowau",
+    "upt": "Korwil Surabaya",
+    "lat": -7.339316,
+    "lon": 112.715007,
+    "bounds": [
+      -7.348454,
+      112.704824,
+      -7.327585,
+      112.737734
+    ],
+    "total_titik": 379,
+    "files": [
+      "map_35003011_SIMOWAU.json"
+    ]
+  },
+  {
+    "id": 183,
+    "nama_di": "DI Kebonagung",
+    "upt": "Korwil Surabaya",
+    "lat": -7.32124,
+    "lon": 112.762746,
+    "bounds": [
+      -7.333362,
+      112.710569,
+      -7.304537,
+      112.826114
+    ],
+    "total_titik": 2732,
+    "files": [
+      "map_35003012_KEBONAGUNG.json"
+    ]
+  },
+  {
+    "id": 184,
+    "nama_di": "DI Jambangan",
+    "upt": "Korwil Surabaya",
+    "lat": -7.319018,
+    "lon": 112.7121,
+    "bounds": [
+      -7.319103,
+      112.711291,
+      -7.318932,
+      112.713252
+    ],
+    "total_titik": 18,
+    "files": [
+      "map_35003013_JAMBANGAN.json"
+    ]
+  },
+  {
+    "id": 185,
+    "nama_di": "DI Karah",
+    "upt": "Korwil Surabaya",
+    "lat": -7.313304,
+    "lon": 112.719297,
+    "bounds": [
+      -7.319063,
+      112.716154,
+      -7.308372,
+      112.732949
+    ],
+    "total_titik": 133,
+    "files": [
+      "map_35003014_KARAH.json"
+    ]
+  },
+  {
+    "id": 186,
+    "nama_di": "DI Gunungsari",
+    "upt": "Korwil Surabaya",
+    "lat": -7.255224,
+    "lon": 112.672108,
+    "bounds": [
+      -7.306801,
+      112.599994,
+      -7.201789,
+      112.73131
+    ],
+    "total_titik": 3106,
+    "files": [
+      "map_35003015_GUNUNGSARI.json"
+    ]
+  },
+  {
+    "id": 187,
+    "nama_di": "DI Rowowiyung",
+    "upt": "Korwil Surabaya",
+    "lat": -7.328264,
+    "lon": 112.703421,
+    "bounds": [
+      -7.334824,
+      112.696745,
+      -7.322244,
+      112.709816
+    ],
+    "total_titik": 495,
+    "files": [
+      "map_35003019_ROWOWIYUNG.json"
+    ]
+  },
+  {
+    "id": 188,
+    "nama_di": "DI Jeblokan",
+    "upt": "Korwil Surabaya",
+    "lat": -7.234816,
+    "lon": 112.761012,
+    "bounds": [
+      -7.287827,
+      112.742768,
+      -7.206377,
+      112.798019
+    ],
+    "total_titik": 2904,
+    "files": [
+      "map_35003021_JEBLOKAN.json"
     ]
   }
 ]

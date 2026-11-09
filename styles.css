@@ -1348,6 +1348,7 @@ input:focus, select:focus {
 .badge-lumajang { background: rgba(20, 184, 166, 0.25); color: #2dd4bf; }
 .badge-madura { background: rgba(234, 179, 8, 0.25); color: #facc15; }
 .badge-pasuruan { background: rgba(99, 102, 241, 0.25); color: #818cf8; }
+.badge-surabaya { background: rgba(249, 115, 22, 0.25); color: #fb923c; }
 
 .di-popup-title {
   font-family: var(--font-display);

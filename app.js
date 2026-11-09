@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'UPT Lumajang': { color: '#14b8a6', badgeClass: 'badge-lumajang', pin: '#2dd4bf' },
     'UPT Madura': { color: '#eab308', badgeClass: 'badge-madura', pin: '#facc15' },
     'UPT Pasuruan': { color: '#6366f1', badgeClass: 'badge-pasuruan', pin: '#818cf8' },
+    'Korwil Surabaya': { color: '#f97316', badgeClass: 'badge-surabaya', pin: '#fb923c' },
     'DEFAULT': { color: '#00e5ff', badgeClass: 'badge-default', pin: '#38bdf8' }
   };
 
