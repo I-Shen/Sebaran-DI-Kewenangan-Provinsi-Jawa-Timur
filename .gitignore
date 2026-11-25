@@ -6,3 +6,5 @@ Thumbs.db
 node_modules/
 .vscode/
 .idea/
+
+data_backup_before_cleanup/
