@@ -8,7 +8,7 @@
 - **Versi**: 1.0.0 (Release Update Skema 2025/2026)
 - **Status**: Final Draft
 - **Target Deployment**: GitHub Repository & GitHub Pages (100% Client-Side WebGIS)
-- **Lingkup Wilayah**: Provinsi Jawa Timur (9 UPT / Korwil Pengelolaan Sumber Daya Air)
+- **Lingkup Wilayah**: Provinsi Jawa Timur (10 UPT / Korwil Pengelolaan Sumber Daya Air)
 
 ---
 
@@ -81,14 +81,15 @@ Menggunakan Leaflet.js dengan pilihan basemap:
 - **Filter Berdasarkan UPT / Korwil**:
   - Seluruh Jawa Timur (All)
   - Korwil Madiun (39 DI)
-  - Korwil Malang (32 DI)
+  - Korwil Malang (33 DI)
   - Perwakilan Mojokerto (8 DI)
   - UPT Bojonegoro (18 DI)
   - UPT Bondowoso (13 DI)
   - UPT Kediri (21 DI)
   - UPT Lumajang (14 DI)
   - UPT Madura (5 DI)
-  - UPT Pasuruan (25 DI)
+  - UPT Pasuruan (30 DI)
+  - Korwil Surabaya (7 DI)
 - **Pencarian Cepat Nama DI**: Live search box untuk menyaring nama DI secara instan.
 - **Popup Informasi Komprehensif**: Klik pada marker DI menampilkan:
   - Nama Daerah Irigasi

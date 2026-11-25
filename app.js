@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Subtitle
     const subLabel = isRiver 
       ? `${p.ws_name || p.WS || 'Wilayah Sungai'} • DAS ${p.DAS || '-'}`
-      : (isAsetTanah ? `${p.kategori} • ${p.status_tanah || 'Aset Pemerintah'}` : `${tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi')} • ${p.di_name || (di ? di.nama_di : 'Daerah Irigasi')}`);
+      : (isAsetTanah ? `[Data Simulasi] ${p.kategori} • ${p.status_tanah || 'Aset Pemerintah'}` : `${tipe === 'petak' ? 'Petak Sawah' : (tipe === 'saluran' ? 'Saluran Irigasi' : 'Bangunan Irigasi')} • ${p.di_name || (di ? di.nama_di : 'Daerah Irigasi')}`);
     document.getElementById('geSubTitle').textContent = subLabel;
 
     // Metrics Group
@@ -2049,7 +2049,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="font-family: Inter, sans-serif; min-width: 140px;">
             <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
               <span style="display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: ${badgeColor};"></span>
-              <strong style="color: ${badgeColor}; font-size: 0.7rem; text-transform: uppercase;">${p.kategori}</strong>
+              <strong style="color: ${badgeColor}; font-size: 0.7rem; text-transform: uppercase;">${p.kategori} • SIMULASI</strong>
             </div>
             <div style="font-size: 0.82rem; font-weight: 700; color: #f8fafc; line-height: 1.2; margin-bottom: 3px;">${title}</div>
             <div style="font-size: 0.72rem; color: #94a3b8; display: flex; gap: 8px;">
@@ -2248,8 +2248,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filterRowAsetTanah) filterRowAsetTanah.classList.toggle('active', isAsetTanahVisible);
     updateLayerCounter();
     showToast(
-      isAsetTanahVisible ? 'Layer Aset Tanah Aktif' : 'Layer Aset Tanah Disembunyikan',
-      isAsetTanahVisible ? `Menampilkan ${currentNearbyAsetCount} poligon aset tanah sempadan di sekitar titik terpilih.` : 'Poligon aset tanah disembunyikan.'
+      isAsetTanahVisible ? 'Layer Aset Tanah (Simulasi) Aktif' : 'Layer Aset Tanah (Simulasi) Disembunyikan',
+      isAsetTanahVisible ? `Menampilkan ${currentNearbyAsetCount} poligon aset tanah simulasi di sekitar titik terpilih.` : 'Poligon aset tanah simulasi disembunyikan.'
     );
   }
 

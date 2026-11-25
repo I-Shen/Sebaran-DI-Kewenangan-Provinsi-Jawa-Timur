@@ -17,19 +17,20 @@ Seluruh data geospasial jaringan irigasi, batas petak sawah, dan inventarisasi b
 * **Kewenangan Wilayah Sungai & Irigasi**: Daerah Irigasi (DI) lintas kabupaten/kota dengan luasan potensial **1.000 s.d. 3.000 Hektar (Ha)** sesuai amanat Permen PUPR No. 14/PRT/M/2015.
 
 ### Rekapitulasi Cakupan Data:
-* **Total Daerah Irigasi (DI)**: **181 DI**
-* **Total Wilayah UPT / Korwil**: **9 Wilayah Kerja Teknis**:
+* **Total Daerah Irigasi (DI)**: **188 DI**
+* **Total Wilayah UPT / Korwil**: **10 Wilayah Kerja Teknis**:
   1. **Korwil Madiun**: 39 DI
-  2. **Korwil Malang**: 32 DI
-  3. **UPT Pasuruan**: 25 DI
+  2. **Korwil Malang**: 33 DI
+  3. **UPT Pasuruan**: 30 DI
   4. **UPT Kediri**: 21 DI
   5. **UPT Bojonegoro**: 18 DI
   6. **UPT Lumajang**: 14 DI
   7. **UPT Bondowoso**: 13 DI
   8. **Perwakilan Mojokerto**: 8 DI
-  9. **UPT Madura**: 5 DI
-* **Berkas Spasial Master**: 198 Berkas KMZ/KML Terintegrasi
-* **Total Fitur Spasial Aktif**: **50.507 Unsur Geospasial** (Saluran, Petak, dan Bangunan)
+  9. **Korwil Surabaya**: 7 DI
+  10. **UPT Madura**: 5 DI
+* **Berkas Spasial Master**: 214 Berkas KMZ/KML Terintegrasi
+* **Total Fitur Spasial Aktif**: **47.853 Unsur Geospasial** (Saluran, Petak, dan Bangunan — setelah deduplikasi)
 * **Jaringan Sungai Utama (6 Wilayah Sungai)**: **18.724 Segmen Sungai** dengan total panjang **47.383,6 km**
 
 ---
@@ -111,9 +112,9 @@ WebGIS ini mengintegrasikan seluruh jaringan sungai alami di Jawa Timur yang ter
   * `diCanalsCasingPane` (zIndex 438) — Casing luar saluran irigasi.
   * `diPetakPane` (zIndex 445) — Poligon petak sawah / daerah layanan irigasi.
   * `diCanalsPane` (zIndex 450) — Inti garis saluran irigasi air biru.
-  * `asetTanahPane` (zIndex 460) — **Layer Aset Tanah & Sempadan Pemerintah (18 Kategori, 1.800 Poligon Canvas)** tepat di atas petak sawah.
+  * `asetTanahPane` (zIndex 460) — **Layer Aset Tanah & Sempadan (Data Simulasi — 18 Kategori, 1.800 Poligon Canvas)** tepat di atas petak sawah.
   * `diBangunanPane` (zIndex 520) — Titik inventaris bangunan air / pushpin kuning KMZ di atas aset tanah.
-  * `diClusterPane` / `markerPane` (zIndex 600+) — Pin sebaran 181 DI.
+  * `diClusterPane` / `markerPane` (zIndex 600+) — Pin sebaran 188 DI.
   * `radarPane` (zIndex 1000) — Radar proksimitas & target pinpoint.
 * **Interaktivitas Sungai & Google Earth Inspector**:
   * **Hover Tooltip**: Menampilkan nama sungai, orde sungai, panjang, dan wilayah sungai.
@@ -151,7 +152,7 @@ Ketika pengguna mengeklik elemen apa pun di peta (baik petak sawah, saluran, mau
 ## ⚡ Fitur Cerdas Lainnya
 
 1. **Pemilihan Cepat DI (Google Earth 1 Layar Utuh)**:
-   * Dropdown cepat di navigasi atas untuk berpindah seketika ke salah satu dari 181 DI Jawa Timur.
+   * Dropdown cepat di navigasi atas untuk berpindah seketika ke salah satu dari 188 DI Jawa Timur.
    * Peta otomatis melakukan *auto-fit bounds* ke seluruh geometri DI tersebut dengan pembesaran optimal.
 
 2. **Pencarian Koordinat Multi-Metode**:
@@ -203,12 +204,12 @@ Sebaran-DI-Kewenangan-Provinsi-Jawa-Timur/
 ├── assets/
 │   └── ylw-pushpin.png     # Ikon Yellow Pushpin Resmi Standar Google Earth
 ├── data/
-│   ├── di_jatim.json       # Database Induk 181 DI Kewenangan Provinsi Jatim
+│   ├── di_jatim.json       # Database Induk 188 DI Kewenangan Provinsi Jatim
 │   ├── di_jatim.js         # Wrapper JS untuk kompatibilitas offline
-│   ├── geojson/            # 181 Berkas Vektor Lengkap (Saluran, Petak, Bangunan)
+│   ├── geojson/            # 188 Berkas Vektor Lengkap (Saluran, Petak, Bangunan)
 │   │   ├── 1.json / 1.js   # DI Bedilan (Korwil Madiun)
 │   │   ├── 66.json / 66.js # DI Sumber Tekik (Korwil Malang - Sampel Gambar 2 & 3)
-│   │   └── ...             # Seluruh 181 DI Lainnya
+│   │   └── ...             # Seluruh 188 DI Lainnya
 │   └── sungai/             # Vektor Jaringan 6 Wilayah Sungai Jawa Timur (Dual-Stroke)
 │       ├── brantas.json / brantas.js
 │       ├── bengawan_solo.json / bengawan_solo.js
