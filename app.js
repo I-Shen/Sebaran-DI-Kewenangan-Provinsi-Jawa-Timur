@@ -2854,7 +2854,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLayerCounter();
     showToast(
       isDiVisible ? 'Layer DI Aktif' : 'Layer DI Disembunyikan',
-      isDiVisible ? 'Sebaran 1.600+ Daerah Irigasi ditampilkan.' : 'Sebaran Daerah Irigasi disembunyikan.'
+      isDiVisible ? 'Sebaran 188 Daerah Irigasi ditampilkan.' : 'Sebaran Daerah Irigasi disembunyikan.'
     );
   }
 
@@ -2973,6 +2973,93 @@ document.addEventListener('DOMContentLoaded', () => {
       if (layerFilterDropdown) layerFilterDropdown.classList.add('hidden');
     });
   });
+
+  // BRIDGE API FOR TANYA SDA AI-AGENT INTEGRATION
+  window.WebGisBridge = {
+    getMap: () => map,
+    getAllDiData: () => allDiData,
+    getCurrentPinpoint: () => currentPinpointCoord,
+    getCurrentNearest5: () => currentNearest5List,
+    getActiveHighlightedDis: () =>
+      [...activeHighlightedDis.values()].map((e) => ({
+        id: e.di.id,
+        nama_di: e.di.nama_di,
+        upt: e.di.upt,
+        counts: e.counts
+      })),
+    getActiveRecommendedRivers: () => activeRecommendedRivers,
+    getAsetTanahData: () => asetTanahDataCache || window.ASET_TANAH_DATA,
+    setPinpointLocation,
+    highlightDi,
+    highlightMultipleDis: (diIds) => {
+      if (!Array.isArray(diIds) || diIds.length === 0) return;
+      clearAllHighlightedDis();
+      let done = 0;
+      diIds.slice(0, 5).forEach((id, idx) => {
+        loadAndAddDiHighlight(id, idx, false, () => {
+          done++;
+          if (done >= Math.min(5, diIds.length)) {
+            fitAllActiveHighlightedDis();
+          }
+        });
+      });
+    },
+    filterByUpt: (uptName) => {
+      const sel = document.getElementById('uptFilter');
+      if (sel) {
+        sel.value = uptName;
+        applyFilters();
+        const filtered = allDiData.filter((d) => d.upt === uptName && d.lat && d.lon);
+        if (filtered.length > 0) {
+          const b = L.latLngBounds(filtered.map((d) => [d.lat, d.lon]));
+          map.fitBounds(b, { padding: [45, 45], maxZoom: 12, duration: 0.8 });
+        }
+        showToast('Filter UPT Aktif', `Menampilkan ${filtered.length} DI pada <strong>${uptName}</strong>.`);
+      }
+    },
+    focusWs: (wsSlug) => {
+      loadFullBasinDetail(wsSlug);
+      showToast('Fokus Wilayah Sungai', `Memuat jaringan sungai pada <strong>${RIVERS_CONFIG[wsSlug]?.name || wsSlug}</strong>.`);
+    },
+    showAsetNear: (lat, lon, category = 'ALL') => {
+      activeAsetTanahCategory = category || 'ALL';
+      const sel = document.getElementById('selAsetCategory');
+      if (sel) sel.value = activeAsetTanahCategory;
+      setPinpointLocation(lat, lon, 'Cek Aset Tanah [Simulasi]', true, true);
+      updateAsetTanahForTarget(lat, lon);
+    },
+    loadDiStatsAsync: (diId) =>
+      loadDiGeoJsonAsync(diId).then((fc) => {
+        const di = allDiData.find((d) => d.id === diId);
+        let saluran = 0, petak = 0, bangunan = 0, totalAreaM2 = 0;
+        (fc?.features || []).forEach((f) => {
+          const g = f.geometry?.type || '';
+          const p = f.properties || {};
+          const tipe = p.tipe || (g === 'Polygon' || g === 'MultiPolygon' ? 'petak' : g === 'LineString' || g === 'MultiLineString' ? 'saluran' : 'bangunan');
+          if (tipe === 'saluran') saluran++;
+          else if (tipe === 'petak') {
+            petak++;
+            const m2 = parseFloat(String(p.area_m2 || p.luas_m2 || '').replace(/[^\d.]/g, ''));
+            if (Number.isFinite(m2)) totalAreaM2 += m2;
+          } else bangunan++;
+        });
+        return {
+          id: diId,
+          nama_di: di?.nama_di || `DI #${diId}`,
+          upt: di?.upt || '-',
+          lat: di?.lat,
+          lon: di?.lon,
+          counts: { saluran, petak, bangunan },
+          estimated_petak_area_ha: totalAreaM2 > 0 ? Number((totalAreaM2 / 10000).toFixed(2)) : null
+        };
+      }),
+    openSidebar: () => syncSidebarVisibility(true),
+    closeSidebar: () => syncSidebarVisibility(false),
+    calculateDistanceKm,
+    parseCoordinateString,
+    findWsForCoordinate,
+    showToast
+  };
 
   // START APPLICATION
   initMap();

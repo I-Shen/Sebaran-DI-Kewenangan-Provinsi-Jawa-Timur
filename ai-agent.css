@@ -1,0 +1,1043 @@
+/* ==========================================================================
+   TANYA SDA — AI-AGENT WEBGIS UI/UX (DESKTOP FLOATING PANEL & MOBILE SHEET)
+   Inspired by "Ask Maps" • Dark Glassmorphism • Dinas PU SDA Prov. Jawa Timur
+   ========================================================================== */
+
+/* NAVBAR TRIGGER BUTTON */
+.btn-tanya-sda-nav {
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 55%, #00e5ff 100%);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid rgba(125, 211, 252, 0.55);
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.45), 0 0 18px rgba(0, 229, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-tanya-sda-nav:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(0, 229, 255, 0.55);
+  filter: brightness(1.06);
+}
+
+.btn-tanya-sda-nav.active {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.65), 0 6px 22px rgba(0, 229, 255, 0.45);
+}
+
+.btn-tanya-sda-nav .ai-sparkle-svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* MOBILE FLOATING AI FAB (Thumb-friendly bottom-left / right trigger) */
+.tanya-sda-mobile-fab {
+  display: none;
+  position: absolute;
+  bottom: 146px;
+  right: 14px;
+  z-index: 940;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 60%, #00e5ff 100%);
+  border: 2px solid rgba(186, 230, 253, 0.85);
+  color: #ffffff;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.65), 0 0 22px rgba(0, 229, 255, 0.55);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  animation: tanyaFabPulse 2.8s infinite ease-in-out;
+}
+
+.tanya-sda-mobile-fab.hidden {
+  display: none !important;
+}
+
+@keyframes tanyaFabPulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), 0 0 18px rgba(0, 229, 255, 0.5); }
+  50% { box-shadow: 0 8px 28px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 229, 255, 0.85); }
+}
+
+/* DESKTOP SINGLE-LINE NAVBAR POLISH */
+.header-actions > button,
+.header-actions .btn-river-toggle,
+.header-actions .btn-icon,
+.header-actions .btn-glow-primary,
+.header-actions .btn-tanya-sda-nav {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1480px) and (min-width: 769px) {
+  .app-header {
+    padding: 0 14px;
+  }
+  .header-actions {
+    gap: 7px;
+  }
+  .header-actions .btn-river-toggle,
+  .header-actions .btn-icon,
+  .header-actions .btn-glow-primary,
+  .header-actions .btn-tanya-sda-nav {
+    padding: 7px 11px;
+    font-size: 0.78rem;
+  }
+  .select-quick-di {
+    max-width: 190px;
+    font-size: 0.78rem;
+  }
+}
+
+/* SHIFT MAP CONTROLS WHEN DESKTOP PANEL IS OPEN (PREVENT OVERLAP!) */
+@media (min-width: 769px) {
+  body.tanya-sda-open .map-controls-group {
+    right: 468px !important;
+    transition: right 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  body.tanya-sda-open .leaflet-bottom.leaflet-right {
+    right: 414px !important;
+    transition: right 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  body.tanya-sda-open .ge-inspector-card {
+    right: 424px !important;
+    transition: right 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  body.tanya-sda-open .floating-target-hud-container,
+  body.tanya-sda-open .mobile-reticle-wrap,
+  body.tanya-sda-open .di-highlight-banner {
+    left: calc(50% - 205px) !important;
+    transition: left 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .map-controls-group,
+  .leaflet-bottom.leaflet-right,
+  .ge-inspector-card {
+    transition: right 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .floating-target-hud-container,
+  .mobile-reticle-wrap,
+  .di-highlight-banner {
+    transition: left 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* ==========================================================================
+   MAIN PANEL CONTAINER (DESKTOP FLOATING RIGHT GLASS PANEL)
+   ========================================================================== */
+.tanya-sda-panel {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: 396px;
+  max-width: calc(100vw - 28px);
+  background: linear-gradient(180deg, rgba(10, 19, 42, 0.94) 0%, rgba(7, 14, 32, 0.96) 100%);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 20px;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.78), 0 0 28px rgba(0, 229, 255, 0.14);
+  z-index: 980;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.26s ease;
+}
+
+.tanya-sda-panel.hidden {
+  display: flex !important;
+  transform: translateX(440px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* DRAG HANDLE (VISIBLE ONLY ON MOBILE) */
+.tanya-sheet-handle-wrap {
+  display: none;
+  padding: 10px 0 4px;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.tanya-sheet-handle {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* HEADER */
+.tanya-sda-header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(15, 28, 60, 0.45);
+}
+
+.tanya-sda-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.tanya-sda-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #38bdf8, #1d4ed8 70%, #0f172a 100%);
+  border: 1.5px solid rgba(125, 211, 252, 0.65);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tanya-sda-logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tanya-sda-title-wrap {
+  min-width: 0;
+}
+
+.tanya-sda-title-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tanya-sda-title-wrap h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.tanya-sda-subtitle {
+  font-size: 0.71rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tanya-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.tanya-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+}
+
+.tanya-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+/* STATUS & QUOTA STRIP */
+.tanya-status-bar {
+  padding: 7px 14px;
+  background: rgba(6, 12, 28, 0.65);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.69rem;
+}
+
+.tanya-quota-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+  font-weight: 600;
+}
+
+.tanya-quota-pill.warning {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.tanya-quota-pill.exhausted {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #fca5a5;
+}
+
+.tanya-quota-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.tanya-model-pill {
+  color: #94a3b8;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* QUOTA EXHAUSTED LOCK BANNER */
+.tanya-quota-banner {
+  margin: 10px 12px 2px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.55), rgba(69, 10, 10, 0.7));
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  color: #fee2e2;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.tanya-quota-banner.hidden {
+  display: none !important;
+}
+
+.tanya-quota-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #fecaca;
+}
+
+.tanya-quota-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-local-fallback-mode {
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  color: #7dd3fc;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-local-fallback-mode:hover {
+  background: rgba(56, 189, 248, 0.32);
+  color: #ffffff;
+}
+
+/* MESSAGES LIST */
+.tanya-sda-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+}
+
+.tanya-sda-messages::-webkit-scrollbar {
+  width: 5px;
+}
+.tanya-sda-messages::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.28);
+  border-radius: 4px;
+}
+
+/* USER BUBBLE (MATCHING SCREENSHOTS 1 & 2) */
+.tanya-msg-user-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tanya-msg-user {
+  max-width: 88%;
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.45), rgba(30, 58, 138, 0.62));
+  border: 1px solid rgba(96, 165, 250, 0.38);
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 13px;
+  color: #f8fafc;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.tanya-msg-user-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.tanya-user-pin {
+  color: #38bdf8;
+  font-size: 0.92rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.tanya-user-text {
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.tanya-user-sub {
+  margin-top: 5px;
+  padding-left: 20px;
+  font-size: 0.7rem;
+  color: #93c5fd;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* BOT RESPONSE ROW WITH GLOWING ROBOT AVATAR */
+.tanya-msg-bot-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.tanya-bot-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #1e3a8a, #0f172a);
+  border: 1.5px solid rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.tanya-bot-avatar svg {
+  width: 22px;
+  height: 22px;
+}
+
+.tanya-bot-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tanya-bot-card {
+  background: rgba(17, 29, 58, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 6px 16px 16px 16px;
+  padding: 12px 13px;
+  color: #e2e8f0;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.42);
+}
+
+.tanya-bot-answer {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #f1f5f9;
+  white-space: pre-line;
+}
+
+/* RANKED LIST INSIDE BOT CARD (CYAN NUMBER BADGES 1..5) */
+.tanya-result-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tanya-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(7, 13, 30, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.tanya-result-row:hover {
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateX(2px);
+}
+
+.tanya-result-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tanya-rank-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00e5ff, #0284c7);
+  color: #041226;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.45);
+}
+
+.tanya-result-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.tanya-result-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tanya-result-meta {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tanya-sim-tag {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(249, 115, 22, 0.25);
+  color: #fdba74;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.tanya-result-dist {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #38bdf8;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* LOCATION ROW */
+.tanya-location-row {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  color: #cbd5e1;
+}
+
+.tanya-location-row i {
+  color: #fbbf24;
+  font-size: 0.8rem;
+}
+
+/* MINI MAP PREVIEW STRIP WITH "LIHAT DI PETA" BUTTON */
+.tanya-minimap-strip {
+  margin-top: 8px;
+  height: 54px;
+  border-radius: 10px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  background:
+    radial-gradient(circle at 28% 55%, rgba(0, 229, 255, 0.32), transparent 45%),
+    radial-gradient(circle at 72% 35%, rgba(16, 185, 129, 0.28), transparent 45%),
+    linear-gradient(135deg, #0d2b3e 0%, #113a36 48%, #0c1f3a 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.tanya-minimap-strip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px);
+  background-size: 16px 16px;
+  pointer-events: none;
+}
+
+.tanya-minimap-coord {
+  position: absolute;
+  left: 10px;
+  bottom: 7px;
+  font-size: 0.65rem;
+  font-family: monospace;
+  color: rgba(226, 232, 240, 0.85);
+  background: rgba(7, 13, 30, 0.65);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn-lihat-peta {
+  position: relative;
+  z-index: 1;
+  background: rgba(7, 13, 30, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 5px 11px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.btn-lihat-peta:hover {
+  background: #00e5ff;
+  color: #070d1e;
+  border-color: #00e5ff;
+}
+
+/* ASSUMPTION BOX */
+.tanya-assumption-box {
+  margin-top: 8px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(7, 13, 30, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 0.7rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.tanya-assumption-box i {
+  color: #38bdf8;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+/* CARD FOOTER ACTIONS: DETAIL, SALIN, BAGIKAN */
+.tanya-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.tanya-action-pill {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  color: #cbd5e1;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tanya-action-pill:hover {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+}
+
+/* TYPING INDICATOR */
+.tanya-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 2px;
+}
+
+.tanya-typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38bdf8;
+  animation: tanyaBounce 1.2s infinite ease-in-out;
+}
+
+.tanya-typing span:nth-child(2) { animation-delay: 0.18s; }
+.tanya-typing span:nth-child(3) { animation-delay: 0.36s; }
+
+@keyframes tanyaBounce {
+  0%, 80%, 100% { transform: scale(0.65); opacity: 0.4; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
+
+/* QUICK CHIPS ROW */
+.tanya-chips-wrap {
+  padding: 8px 12px 6px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tanya-chips-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.tanya-chip {
+  flex-shrink: 0;
+  background: rgba(15, 31, 66, 0.78);
+  border: 1px solid rgba(56, 189, 248, 0.32);
+  color: #bae6fd;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.tanya-chip:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #00e5ff;
+  color: #ffffff;
+}
+
+.tanya-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* INPUT BAR */
+.tanya-input-footer {
+  padding: 6px 12px 10px;
+  background: rgba(7, 13, 30, 0.75);
+}
+
+.tanya-input-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 26, 54, 0.92);
+  border: 1.5px solid rgba(56, 189, 248, 0.38);
+  border-radius: 999px;
+  padding: 5px 6px 5px 13px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tanya-input-box:focus-within {
+  border-color: #00e5ff;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
+}
+
+.tanya-input-box.disabled {
+  opacity: 0.6;
+  border-color: rgba(248, 113, 113, 0.4);
+  background: rgba(30, 18, 28, 0.75);
+}
+
+.tanya-input-sparkle {
+  color: #38bdf8;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.tanya-input-field {
+  flex: 1;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 6px 4px !important;
+  color: #ffffff;
+  font-size: 0.82rem;
+  min-width: 0;
+}
+
+.tanya-input-field::placeholder {
+  color: #64748b;
+}
+
+.tanya-input-field:disabled {
+  cursor: not-allowed;
+}
+
+.tanya-send-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00e5ff, #0284c7);
+  color: #041226;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.86rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.45);
+}
+
+.tanya-send-btn:hover:not(:disabled) {
+  transform: scale(1.06);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.75);
+}
+
+.tanya-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.tanya-disclaimer {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 0.64rem;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   ON-MAP CALLOUT OVERLAY ("5 DI TERDEKAT" MATCHING SCREENSHOT 1)
+   ========================================================================== */
+.tanya-map-callout-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+.tanya-map-callout {
+  background: rgba(9, 18, 40, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(0, 229, 255, 0.55);
+  border-radius: 14px;
+  padding: 9px 12px;
+  min-width: 215px;
+  max-width: 260px;
+  color: #f8fafc;
+  font-family: var(--font-sans);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 20px rgba(0, 229, 255, 0.25);
+}
+
+.tanya-map-callout-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tanya-map-callout-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #00e5ff;
+}
+
+.tanya-map-callout-close {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tanya-map-callout-close:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.tanya-map-callout-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.71rem;
+  padding: 2.5px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.tanya-map-callout-row:hover {
+  background: rgba(0, 229, 255, 0.18);
+}
+
+.tanya-map-callout-row span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tanya-map-callout-row span:last-child {
+  color: #38bdf8;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   RESPONSIVE SMARTPHONE BOTTOM SHEET (MATCHING SCREENSHOT 2, <= 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .app-header {
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .brand {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .brand-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+  }
+  .brand-text h1 {
+    font-size: 0.86rem;
+    max-width: 122px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .header-actions {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 6px;
+    padding: 4px 0;
+  }
+  .header-actions::-webkit-scrollbar {
+    display: none;
+  }
+  .header-actions .btn-river-toggle,
+  .header-actions .btn-icon,
+  .header-actions .btn-glow-primary {
+    padding: 6px 10px;
+    font-size: 0.74rem;
+  }
+  .btn-tanya-sda-nav .btn-text {
+    display: none;
+  }
+  .btn-tanya-sda-nav {
+    padding: 6px 9px;
+  }
+  .tanya-sda-mobile-fab {
+    display: inline-flex;
+  }
+  /* Keep top half of mobile map uncluttered while Tanya SDA bottom sheet is open */
+  body.tanya-sda-open .di-highlight-banner {
+    display: none !important;
+  }
+
+  .tanya-sda-panel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 58vh;
+    max-height: 88vh;
+    min-height: 280px;
+    border-radius: 22px 22px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    z-index: 1080;
+    transform: translateY(0);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), height 0.26s ease, opacity 0.25s ease;
+  }
+
+  .tanya-sda-panel.expanded {
+    height: 86vh;
+  }
+
+  .tanya-sda-panel.hidden {
+    transform: translateY(112%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .tanya-sheet-handle-wrap {
+    display: flex;
+  }
+
+  .tanya-sda-header {
+    padding: 4px 14px 10px;
+  }
+
+  .tanya-sda-messages {
+    padding: 10px 12px 8px;
+    gap: 11px;
+  }
+
+  .tanya-input-footer {
+    padding: 5px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+}

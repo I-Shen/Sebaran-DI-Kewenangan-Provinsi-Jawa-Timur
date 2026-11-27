@@ -1,0 +1,19 @@
+name = "tanya-sda-jatim-agent"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+[vars]
+PRIMARY_MODEL = "gemini-3.8-flash"
+FALLBACK_MODEL = "gemini-4-hydrogen"
+RESILIENCE_MODEL = "gemini-3.5-flash"
+DAILY_LIMIT = "150"
+RPM_LIMIT = "10"
+
+[[durable_objects.bindings]]
+name = "QUOTA_GUARD"
+class_name = "QuotaGuard"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["QuotaGuard"]
