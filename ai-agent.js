@@ -11,7 +11,7 @@
   // 1. CONFIGURATION
   // =========================================================================
   // URL Cloudflare Worker AI-Agent (dapat dioverride via window.TANYA_SDA_ENDPOINT atau ?ai_endpoint=...)
-  const DEFAULT_CLOUDFLARE_WORKER_URL = 'https://tanya-sda-jatim-agent.workers.dev';
+  const DEFAULT_CLOUDFLARE_WORKER_URL = 'https://tanya-sda-jatim-agent.mihsannugi123.workers.dev';
 
   function resolveWorkerBaseUrl() {
     const params = new URLSearchParams(window.location.search);

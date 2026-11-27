@@ -1,30 +1,37 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Sebaran DI Kewenangan Provinsi Jawa Timur | WebGIS Portal</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230284c7'/%3E%3Cpath d='M10 38c6-5 12-5 18 0s12 5 18 0 8-4 8-4v10s-4 4-8 4-12 5-18 0-12-5-18 0V38z' fill='%2300e5ff'/%3E%3Cpath d='M10 24c6-5 12-5 18 0s12 5 18 0 8-4 8-4v8s-4 4-8 4-12 5-18 0-12-5-18 0v-8z' fill='%23ffffff'/%3E%3C/svg%3E">
-  <meta name="description" content="Portal WebGIS Interaktif Sebaran Daerah Irigasi (DI) Kewenangan Pemerintah Provinsi Jawa Timur dengan pencarian koordinat dan deteksi 5 DI terdekat real-time.">
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230284c7'/%3E%3Cpath d='M10 38c6-5 12-5 18 0s12 5 18 0 8-4 8-4v10s-4 4-8 4-12 5-18 0-12-5-18 0V38z' fill='%2300e5ff'/%3E%3Cpath d='M10 24c6-5 12-5 18 0s12 5 18 0 8-4 8-4v8s-4 4-8 4-12 5-18 0-12-5-18 0v-8z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <meta name="description"
+    content="Portal WebGIS Interaktif Sebaran Daerah Irigasi (DI) Kewenangan Pemerintah Provinsi Jawa Timur dengan pencarian koordinat dan deteksi 5 DI terdekat real-time.">
 
   <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
 
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <!-- Leaflet MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 
   <!-- Custom CSS -->
-  <link rel="stylesheet" href="styles.css?v=20261127">
-  <link rel="stylesheet" href="ai-agent.css?v=20261127">
+  <link rel="stylesheet" href="styles.css?v=20261127b">
+  <link rel="stylesheet" href="ai-agent.css?v=20261127b">
 </head>
+
 <body>
   <div class="app-layout">
     <!-- TOP NAVBAR -->
@@ -49,25 +56,29 @@
         </div>
 
         <!-- TOGGLE LAYER SEBARAN DI -->
-        <button id="btnToggleDi" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Sebaran Titik Daerah Irigasi (DI)">
+        <button id="btnToggleDi" class="btn-river-toggle active"
+          title="Tampilkan/Sembunyikan Sebaran Titik Daerah Irigasi (DI)">
           <i class="fa-solid fa-location-dot"></i>
           <span class="btn-text">DI</span>
         </button>
 
         <!-- TOGGLE BATAS WILAYAH SUNGAI (WS) -->
-        <button id="btnToggleWs" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Batas 6 Wilayah Sungai (WS)">
+        <button id="btnToggleWs" class="btn-river-toggle active"
+          title="Tampilkan/Sembunyikan Batas 6 Wilayah Sungai (WS)">
           <i class="fa-solid fa-draw-polygon"></i>
           <span class="btn-text">WS</span>
         </button>
 
         <!-- TOGGLE LAYER SUNGAI UTAMA JATIM -->
-        <button id="btnToggleRivers" class="btn-river-toggle active" title="Tampilkan/Sembunyikan Jaringan Sungai Utama">
+        <button id="btnToggleRivers" class="btn-river-toggle active"
+          title="Tampilkan/Sembunyikan Jaringan Sungai Utama">
           <i class="fa-solid fa-water"></i>
           <span class="btn-text">Sungai</span>
         </button>
 
         <!-- TOGGLE LAYER ASET TANAH (SEMPADAN & PERSIL PEMERINTAH - SIMULASI ON DEMAND) -->
-        <button id="btnToggleAsetTanah" class="btn-river-toggle" title="Layer Aset Tanah & Sempadan [Data Simulasi] (Muncul otomatis saat titik koordinat dipilih)">
+        <button id="btnToggleAsetTanah" class="btn-river-toggle"
+          title="Layer Aset Tanah & Sempadan [Data Simulasi] (Muncul otomatis saat titik koordinat dipilih)">
           <i class="fa-solid fa-vector-square"></i>
           <span class="btn-text">Aset Tanah (Simulasi)</span>
           <span id="badgeAsetTanahNav" class="badge-mini-counter">Standby</span>
@@ -93,14 +104,16 @@
       <div id="map"></div>
 
       <!-- FLOATING SIDEBAR TOGGLE BUTTON (FORMAT UTAMA SEMBUNYI PADA HP / PETA BERSIH) -->
-      <button id="btnFloatingSidebarToggle" class="btn-floating-sidebar" title="Buka Panel Informasi & Analisis Spasial">
+      <button id="btnFloatingSidebarToggle" class="btn-floating-sidebar"
+        title="Buka Panel Informasi & Analisis Spasial">
         <i class="fa-solid fa-compass"></i>
         <span>Panel Informasi</span>
       </button>
 
       <!-- MOBILE RETICLE TARGETING FAB (METODE BIDIK PUSAT PETA) -->
       <div id="mobileReticleControls" class="mobile-reticle-wrap">
-        <button id="btnCenterReticle" class="btn-reticle-fab" title="Tandai Titik di Pusat Layar (Shooting Target Presisi)">
+        <button id="btnCenterReticle" class="btn-reticle-fab"
+          title="Tandai Titik di Pusat Layar (Shooting Target Presisi)">
           <i class="fa-solid fa-crosshairs"></i>
           <span>Bidik Pusat Peta</span>
         </button>
@@ -108,24 +121,27 @@
 
       <!-- CENTER SCREEN SHOOTING TARGET (ICON BIDIK MERAH TERANG - SHOOTING TARGET ICON) -->
       <div id="centerScreenReticle" class="center-screen-crosshair" title="Titik Bidik Pusat Layar (Shooting Target)">
-        <svg class="shooting-target-svg" viewBox="0 0 52 52" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg class="shooting-target-svg" viewBox="0 0 52 52" width="48" height="48" fill="none"
+          xmlns="http://www.w3.org/2000/svg">
           <!-- Dark Contrast Underlay for thick/bright layers -->
-          <circle cx="26" cy="26" r="20" stroke="#000000" stroke-width="4" opacity="0.7"/>
-          <circle cx="26" cy="26" r="11" stroke="#000000" stroke-width="3" opacity="0.7"/>
-          <line x1="26" y1="2" x2="26" y2="12" stroke="#000000" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
-          <line x1="26" y1="40" x2="26" y2="50" stroke="#000000" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
-          <line x1="2" y1="26" x2="12" y2="26" stroke="#000000" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
-          <line x1="40" y1="26" x2="50" y2="26" stroke="#000000" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+          <circle cx="26" cy="26" r="20" stroke="#000000" stroke-width="4" opacity="0.7" />
+          <circle cx="26" cy="26" r="11" stroke="#000000" stroke-width="3" opacity="0.7" />
+          <line x1="26" y1="2" x2="26" y2="12" stroke="#000000" stroke-width="4" stroke-linecap="round" opacity="0.7" />
+          <line x1="26" y1="40" x2="26" y2="50" stroke="#000000" stroke-width="4" stroke-linecap="round"
+            opacity="0.7" />
+          <line x1="2" y1="26" x2="12" y2="26" stroke="#000000" stroke-width="4" stroke-linecap="round" opacity="0.7" />
+          <line x1="40" y1="26" x2="50" y2="26" stroke="#000000" stroke-width="4" stroke-linecap="round"
+            opacity="0.7" />
           <!-- Vivid Bright Red Target Rings -->
-          <circle cx="26" cy="26" r="20" stroke="#ff1744" stroke-width="2.4" stroke-dasharray="8 4"/>
-          <circle cx="26" cy="26" r="11" stroke="#ff1744" stroke-width="2.0"/>
+          <circle cx="26" cy="26" r="20" stroke="#ff1744" stroke-width="2.4" stroke-dasharray="8 4" />
+          <circle cx="26" cy="26" r="11" stroke="#ff1744" stroke-width="2.0" />
           <!-- Vivid Bright Red Tactical Crosshairs -->
-          <line x1="26" y1="2" x2="26" y2="12" stroke="#ff1744" stroke-width="2.4" stroke-linecap="round"/>
-          <line x1="26" y1="40" x2="26" y2="50" stroke="#ff1744" stroke-width="2.4" stroke-linecap="round"/>
-          <line x1="2" y1="26" x2="12" y2="26" stroke="#ff1744" stroke-width="2.4" stroke-linecap="round"/>
-          <line x1="40" y1="26" x2="50" y2="26" stroke="#ff1744" stroke-width="2.4" stroke-linecap="round"/>
+          <line x1="26" y1="2" x2="26" y2="12" stroke="#ff1744" stroke-width="2.4" stroke-linecap="round" />
+          <line x1="26" y1="40" x2="26" y2="50" stroke="#ff1744" stroke-width="2.4" stroke-linecap="round" />
+          <line x1="2" y1="26" x2="12" y2="26" stroke="#ff1744" stroke-width="2.4" stroke-linecap="round" />
+          <line x1="40" y1="26" x2="50" y2="26" stroke="#ff1744" stroke-width="2.4" stroke-linecap="round" />
           <!-- Center Bullseye Pinpoint Dot with High-Contrast White Core -->
-          <circle cx="26" cy="26" r="3.5" fill="#ff1744" stroke="#ffffff" stroke-width="1.5"/>
+          <circle cx="26" cy="26" r="3.5" fill="#ff1744" stroke="#ffffff" stroke-width="1.5" />
         </svg>
       </div>
 
@@ -146,11 +162,13 @@
           </div>
           <div class="clear-bar-actions">
             <!-- Button Kunci Target -->
-            <button id="btnLockTargetPin" class="btn-clear-pill-action" title="Kunci titik agar klik tidak sengaja tidak memindahkan target">
+            <button id="btnLockTargetPin" class="btn-clear-pill-action"
+              title="Kunci titik agar klik tidak sengaja tidak memindahkan target">
               <i class="fa-solid fa-lock-open" id="iconLockTarget"></i> <span id="lblLockTarget">Kunci</span>
             </button>
             <!-- Button Undo / Urungkan -->
-            <button id="btnUndoPinpoint" class="btn-clear-pill-action hidden" title="Urungkan ke titik koordinat sebelumnya (Ctrl+Z)">
+            <button id="btnUndoPinpoint" class="btn-clear-pill-action hidden"
+              title="Urungkan ke titik koordinat sebelumnya (Ctrl+Z)">
               <i class="fa-solid fa-rotate-left"></i> <span>Urungkan</span>
             </button>
             <!-- Button Info 5 DI (Drawer Informasi Mobile) -->
@@ -158,7 +176,8 @@
               <i class="fa-solid fa-chart-simple"></i> <span>Info 5 DI</span>
             </button>
             <!-- Button Batal Pilihan -->
-            <button id="btnFloatingClearSelection" class="btn-clear-selection-pill" title="Batalkan & Hapus Titik Pilihan (Tekan ESC)">
+            <button id="btnFloatingClearSelection" class="btn-clear-selection-pill"
+              title="Batalkan & Hapus Titik Pilihan (Tekan ESC)">
               <i class="fa-solid fa-xmark"></i> <span>Batal</span>
             </button>
           </div>
@@ -178,9 +197,12 @@
             </div>
           </div>
           <div class="ge-header-actions">
-            <button id="btnMinimizeGeInspector" class="ge-btn-icon" title="Perkecil/Perbesar Kartu"><i class="fa-solid fa-minus"></i></button>
-            <button id="btnGeMenu" class="ge-btn-icon" title="Menu"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-            <button id="btnCloseGeInspector" class="ge-btn-icon" title="Tutup"><i class="fa-solid fa-xmark"></i></button>
+            <button id="btnMinimizeGeInspector" class="ge-btn-icon" title="Perkecil/Perbesar Kartu"><i
+                class="fa-solid fa-minus"></i></button>
+            <button id="btnGeMenu" class="ge-btn-icon" title="Menu"><i
+                class="fa-solid fa-ellipsis-vertical"></i></button>
+            <button id="btnCloseGeInspector" class="ge-btn-icon" title="Tutup"><i
+                class="fa-solid fa-xmark"></i></button>
           </div>
         </div>
 
@@ -293,7 +315,7 @@
               <i class="fa-solid fa-location-dot"></i>
               <h3>Cari Koordinat Lokasi</h3>
             </div>
-            
+
             <div class="tab-container">
               <button class="tab-btn active" data-tab="tab-smart">Pasti / Copy-Paste</button>
               <button class="tab-btn" data-tab="tab-manual">Input Terpisah (DD)</button>
@@ -301,7 +323,9 @@
 
             <!-- TAB 1: SMART PASTE -->
             <div id="tab-smart" class="tab-content active">
-              <p class="input-hint">Paste koordinat gabungan (Desimal atau DMS). Contoh: <code>-7.718417, 112.909267</code> atau <code>7°43'6.30"S 112°54'33.36"E</code></p>
+              <p class="input-hint">Paste koordinat gabungan (Desimal atau DMS). Contoh:
+                <code>-7.718417, 112.909267</code> atau <code>7°43'6.30"S 112°54'33.36"E</code>
+              </p>
               <div class="input-group">
                 <input type="text" id="smartCoordInput" placeholder="Paste koordinat di sini..." autocomplete="off">
                 <button id="btnSmartSearch" class="btn-action">
@@ -344,7 +368,8 @@
               </div>
               <div class="pinpoint-badge-wrap">
                 <span id="pinpointCoordBadge" class="coord-badge">-</span>
-                <button id="btnClearTargetPin" class="btn-clear-target hidden" title="Batalkan dan hapus titik pilihan (Esc)">
+                <button id="btnClearTargetPin" class="btn-clear-target hidden"
+                  title="Batalkan dan hapus titik pilihan (Esc)">
                   <i class="fa-solid fa-xmark"></i> Batal
                 </button>
               </div>
@@ -365,10 +390,12 @@
                 <span id="activeCompareCountBadge" class="compare-count-badge">1 DI Aktif</span>
               </div>
               <div class="proximity-controls-btns">
-                <button id="btnHighlightAll5" class="btn-compare-action btn-compare-all" title="Highlight & bandingkan seluruh 5 DI terdekat sekaligus di peta">
+                <button id="btnHighlightAll5" class="btn-compare-action btn-compare-all"
+                  title="Highlight & bandingkan seluruh 5 DI terdekat sekaligus di peta">
                   <i class="fa-solid fa-layer-group"></i> Highlight Semua (5 DI)
                 </button>
-                <button id="btnClearCompareDis" class="btn-compare-action btn-compare-clear" title="Sembunyikan semua highlight">
+                <button id="btnClearCompareDis" class="btn-compare-action btn-compare-clear"
+                  title="Sembunyikan semua highlight">
                   <i class="fa-solid fa-eye-slash"></i> Sembunyikan
                 </button>
               </div>
@@ -392,7 +419,7 @@
               </div>
               <span id="nearbyWsBadge" class="nearby-ws-badge">WS ...</span>
             </div>
-            
+
             <p class="section-desc" style="font-size: 0.76rem; color: #94a3b8; margin: 4px 0 8px 0;">
               Alur sungai terdekat dari titik target. Klik baris atau tombol untuk interaksi:
             </p>
@@ -403,7 +430,8 @@
 
             <div class="nearby-rivers-actions">
               <button id="btnToggleAllOrde" class="btn-compare-action" style="width: 100%; margin-top: 10px;">
-                <i class="fa-solid fa-network-wired"></i> <span id="lblToggleAllOrde">Tampilkan Seluruh Aliran Sungai di WS Ini</span>
+                <i class="fa-solid fa-network-wired"></i> <span id="lblToggleAllOrde">Tampilkan Seluruh Aliran Sungai di
+                  WS Ini</span>
               </button>
             </div>
           </div>
@@ -646,7 +674,8 @@
   </div>
 
   <!-- Leaflet JS & MarkerCluster JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <!-- Spatial Data JS wrappers (DI, Batas WS & Sungai, Aset Tanah) -->
@@ -657,8 +686,9 @@
   <script src="data/aset_tanah.js"></script>
 
   <!-- Application JS -->
-  <script src="app.js?v=20261127"></script>
+  <script src="app.js?v=20261127b"></script>
   <!-- Tanya SDA AI-Agent JS -->
-  <script src="ai-agent.js?v=20261127"></script>
+  <script src="ai-agent.js?v=20261127b"></script>
 </body>
+
 </html>
